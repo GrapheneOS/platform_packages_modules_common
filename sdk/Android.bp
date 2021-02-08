@@ -31,7 +31,7 @@ mainline_stubs_args =
     "--hide Typo " +
     "--hide UnavailableSymbol "
 
-// TODO: modularize this so not every module has the same whitelist
+// TODO: modularize this so not every module has the same list
 framework_packages_to_document = [
     "android",
     "dalvik",
