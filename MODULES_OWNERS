@@ -1,0 +1,9 @@
+# This file is intended to be included in the OWNERS file for mainline modules.
+# The goal is to allow the mainline modularization team to approve certain
+# classes of change within mainline modules and their build rules.
+#
+# It should be included in a module OWNERS file via:
+# include packages/modules/common:/MODULES_OWNERS
+
+mathewi@google.com
+hansson@google.com
