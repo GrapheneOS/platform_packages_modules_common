@@ -588,6 +588,7 @@ prebuilt_androidx-constraintlayout_constraintlayout-nodeps(minSdkVersion:(no ver
 prebuilt_androidx-constraintlayout_constraintlayout-solver-nodeps(minSdkVersion:current)
 prebuilt_androidx.activity_activity-ktx-nodeps(minSdkVersion:(no version))
 prebuilt_androidx.activity_activity-nodeps(minSdkVersion:(no version))
+prebuilt_androidx.annotation_annotation-nodeps(minSdkVersion:30)
 prebuilt_androidx.annotation_annotation-nodeps(minSdkVersion:current)
 prebuilt_androidx.appcompat_appcompat-nodeps(minSdkVersion:(no version))
 prebuilt_androidx.appcompat_appcompat-resources-nodeps(minSdkVersion:(no version))
