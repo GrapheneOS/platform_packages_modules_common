@@ -166,6 +166,7 @@ java_defaults {
     },
     defaults_visibility: [
         ":__subpackages__",
+        "//art/libartservice:__subpackages__",
         "//frameworks/base/apex:__subpackages__",
         "//packages/modules:__subpackages__",
     ],
