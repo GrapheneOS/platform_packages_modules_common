@@ -12,4 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-build = ["ModuleDefaults.bp"]
+package {
+    default_visibility: ["//packages/modules/common:__subpackages__"],
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
