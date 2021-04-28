@@ -1,5 +1,25 @@
 #!/bin/bash -ex
 
+# Usage:
+# generate_ml_bundle.sh [args] source_tree dest_tree api_level
+#
+# Args:
+# -p Sets prefer=true in generated java_sdk_library_import rules
+# -a Also update artifects; default behaviour is just to generate build rules.
+
+PREFER=false
+UPDATE_ARTIFACTS=false
+while getopts "pa" opt; do
+    case ${opt} in
+          p ) PREFER=true;;
+          a ) UPDATE_ARTIFACTS=true;;
+          \? ) echo "Invalid option."
+            exit
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+
 SOURCE_TREE=$1
 DESTINATION_TREE=$2
 API_LEVEL=$3
@@ -13,28 +33,31 @@ function sdk_lib_bp() {
 java_sdk_library_import {
     name: "${modulename}",
     owner: "google",
-    prefer: true,
+    prefer: ${PREFER},
     shared_library: ${shared_library},
     apex_available: [
         "${apexname}",
         "test_${apexname}",
     ],
     public: {
-        jars: ["sdk_library/public/${modulename}.jar"],
-        current_api: "sdk_library/public/${modulename}.txt",
-        removed_api: "sdk_library/public/${modulename}-removed.txt",
+        jars: ["current/public/${modulename}.jar"],
+        stub_srcs: ["current/public/${modulename}.srcjar"],
+        current_api: "current/public/${modulename}.txt",
+        removed_api: "current/public/${modulename}-removed.txt",
         sdk_version: "module_current",
     },
     system: {
-        jars: ["sdk_library/system/${modulename}.jar"],
-        current_api: "sdk_library/system/${modulename}.txt",
-        removed_api: "sdk_library/system/${modulename}-removed.txt",
+        jars: ["current/system/${modulename}.jar"],
+        stub_srcs: ["current/system/${modulename}.srcjar"],
+        current_api: "current/system/${modulename}.txt",
+        removed_api: "current/system/${modulename}-removed.txt",
         sdk_version: "module_current",
     },
     module_lib: {
-        jars: ["sdk_library/module_lib/${modulename}.jar"],
-        current_api: "sdk_library/module_lib/${modulename}.txt",
-        removed_api: "sdk_library/module_lib/${modulename}-removed.txt",
+        jars: ["current/module_lib/${modulename}.jar"],
+        stub_srcs: ["current/module_lib/${modulename}.srcjar"],
+        current_api: "current/module_lib/${modulename}.txt",
+        removed_api: "current/module_lib/${modulename}-removed.txt",
         sdk_version: "module_current",
     },
 }
@@ -59,13 +82,15 @@ function make_sdk_library() {
     done
     #echo >> "$bp"
 
-    rm -rf "${destdir}/sdk_library"
-    mkdir -p "${destdir}/sdk_library/"{public,system,module_lib}
-    for libname in $libnames; do
-        cp public/{${libname}.jar,api/${libname}.txt,api/${libname}-removed.txt} "${destdir}/sdk_library/public"
-        cp system/{${libname}.jar,api/${libname}.txt,api/${libname}-removed.txt} "${destdir}/sdk_library/system"
-        cp module-lib/{${libname}.jar,api/${libname}.txt,api/${libname}-removed.txt} "${destdir}/sdk_library/module_lib"
-    done
+    if [ "${UPDATE_ARTIFACTS}" == "true" ] ; then
+        rm -rf "${destdir}/current"
+        mkdir -p "${destdir}/current/"{public,system,module_lib}
+        for libname in $libnames; do
+            cp public/{${libname}.jar,api/${libname}.txt,api/${libname}-removed.txt} "${destdir}/current/public"
+            cp system/{${libname}.jar,api/${libname}.txt,api/${libname}-removed.txt} "${destdir}/current/system"
+            cp module-lib/{${libname}.jar,api/${libname}.txt,api/${libname}-removed.txt} "${destdir}/current/module_lib"
+        done
+    fi
 }
 
 function copy_notices() {
@@ -84,16 +109,16 @@ function get_dest_dir() {
     if [[ "$SOURCE_TREE_TYPE" == "PARTNER" ]]; then
         echo "${DESTINATION_TREE}/vendor/partner_modules/${1}"
     elif [[ "$SOURCE_TREE_TYPE" == "GOOGLE" ]]; then
-        echo -n "${DESTINATION_TREE}/vendor/unbundled_google/modules/"
+        echo -n "${DESTINATION_TREE}/prebuilts/module_sdk/"
         case "$1" in
-            "IKEPrebuilt") echo "IpSecGooglePrebuilt";;
-            "MediaFrameworkPrebuilt") echo "MediaFrameworkPrebuilt";;
-            "MediaProviderPrebuilt") echo "MediaProviderGooglePrebuilt";;
-            "PermissionControllerPrebuilt") echo "PermissionControllerPrebuilt";;
-            "SdkExtensionsPrebuilt") echo "SdkExtensionsGooglePrebuilt";;
-            "StatsdPrebuilt") echo "StatsdGooglePrebuilt";;
-            "TetheringPrebuilt") echo "TetheringGooglePrebuilt";;
-            "WiFiPrebuilt") echo "WifiGooglePrebuilt";;
+            "IKEPrebuilt") echo "IPsec";;
+            "MediaFrameworkPrebuilt") echo "Media";;
+            "MediaProviderPrebuilt") echo "MediaProvider";;
+            "PermissionControllerPrebuilt") echo "Permission";;
+            "SdkExtensionsPrebuilt") echo "SdkExtensions";;
+            "StatsdPrebuilt") echo "StatsD";;
+            "TetheringPrebuilt") echo "Connectivity";;
+            "WiFiPrebuilt") echo "Wifi";;
             *) exit 1;;
         esac
     else
