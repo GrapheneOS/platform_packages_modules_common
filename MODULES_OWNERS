@@ -4,6 +4,8 @@
 #
 # It should be included in a module OWNERS file via:
 # include packages/modules/common:/MODULES_OWNERS
+#
+# See go/mainline-owners-policy for more details.
 
 mathewi@google.com
 hansson@google.com
