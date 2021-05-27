@@ -55,7 +55,7 @@ gensrcs {
 prebuilt_etc {
     name: "current_sdkinfo",
     src: ":cur_sdkinfo_src",
-    filename: "sdkinfo.binarypb",
+    filename: "sdkinfo.pb",
     installable: false,
     visibility: [
         "//art:__subpackages__",
