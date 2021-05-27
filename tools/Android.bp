@@ -53,9 +53,18 @@ gensrcs {
 }
 
 prebuilt_etc {
-    name: "cur_sdkinfo",
+    name: "current_sdkinfo",
     src: ":cur_sdkinfo_src",
     filename: "sdkinfo.binarypb",
     installable: false,
-    visibility: ["//packages/modules/SdkExtensions"],
+    visibility: [
+        "//art:__subpackages__",
+        "//frameworks/av/apex:__subpackages__",
+        "//packages/modules/Connectivity:__subpackages__",
+        "//packages/modules/IPsec/apex:__subpackages__",
+        "//packages/modules/Permission:__subpackages__",
+        "//packages/modules/SdkExtensions:__subpackages__",
+        "//packages/modules/StatsD:__subpackages__",
+        "//packages/providers/MediaProvider:__subpackages__",
+    ],
 }
