@@ -63,6 +63,7 @@ prebuilt_etc {
         "//packages/modules/Connectivity:__subpackages__",
         "//packages/modules/IPsec/apex:__subpackages__",
         "//packages/modules/Permission:__subpackages__",
+        "//packages/modules/Scheduling:__subpackages__",
         "//packages/modules/SdkExtensions:__subpackages__",
         "//packages/modules/StatsD:__subpackages__",
         "//packages/providers/MediaProvider:__subpackages__",
