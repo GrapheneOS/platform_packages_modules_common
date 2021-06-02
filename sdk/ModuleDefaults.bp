@@ -126,6 +126,8 @@ java_defaults {
 
     // Collates API usages from each module for further analysis.
     plugins: ["java_api_finder"],
+
+    dist_group: "android",
 }
 
 // Defaults for mainline module provided java_sdk_library instances.
