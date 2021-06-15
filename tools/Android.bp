@@ -59,6 +59,7 @@ prebuilt_etc {
     installable: false,
     visibility: [
         "//art:__subpackages__",
+        "//external/conscrypt:__subpackages__",
         "//frameworks/av/apex:__subpackages__",
         "//packages/modules/Connectivity:__subpackages__",
         "//packages/modules/IPsec/apex:__subpackages__",
