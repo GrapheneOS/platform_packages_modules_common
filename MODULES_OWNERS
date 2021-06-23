@@ -7,5 +7,5 @@
 #
 # See go/mainline-owners-policy for more details.
 
-mathewi@google.com #{NEVER_SUGGEST}
-hansson@google.com #{NEVER_SUGGEST}
+mathewi@google.com #{LAST_RESORT_SUGGESTION}
+hansson@google.com #{LAST_RESORT_SUGGESTION}
