@@ -5,5 +5,5 @@
 # It should be included in a module OWNERS file via:
 # include packages/modules/common:/MODULES_OWNERS
 
-mathewi@google.com
-hansson@google.com
+mathewi@google.com #{LAST_RESORT_SUGGESTION}
+hansson@google.com #{LAST_RESORT_SUGGESTION}
