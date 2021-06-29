@@ -16,3 +16,27 @@ package {
     default_visibility: ["//packages/modules/common:__subpackages__"],
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
+
+soong_config_bool_variable {
+    name: "module_build_from_source",
+}
+
+soong_config_module_type {
+    name: "module_apex_set",
+    module_type: "apex_set",
+    config_namespace: "ANDROID",
+    bool_variables: ["module_build_from_source"],
+    properties: [
+        "prefer",
+    ],
+}
+
+soong_config_module_type {
+    name: "module_android_app_import",
+    module_type: "android_app_import",
+    config_namespace: "ANDROID",
+    bool_variables: ["module_build_from_source"],
+    properties: [
+        "prefer",
+    ],
+}
