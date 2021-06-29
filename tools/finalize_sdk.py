@@ -95,10 +95,6 @@ for f in os.listdir(tmpdir):
     with zipfile.ZipFile(os.path.join(tmpdir, f)) as zipFile:
         zipFile.extractall(target_dir)
 
-    # Work around broken IPsec build rules (b/190499958)
-    if repo == 'prebuilts/module_sdk/IPsec':
-        os.rename(os.path.join(target_dir, 'Android.bp'), os.path.join(target_dir, 'Android.bp.disabled'))
-
     print('Created %s' % target_dir)
     created_dirs[repo].append(dir)
 
