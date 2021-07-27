@@ -42,6 +42,16 @@ soong_config_module_type {
 }
 
 soong_config_module_type {
+    name: "module_android_app_set",
+    module_type: "android_app_set",
+    config_namespace: "ANDROID",
+    bool_variables: ["module_build_from_source"],
+    properties: [
+        "prefer",
+    ],
+}
+
+soong_config_module_type {
     name: "module_prebuilt_bootclasspath_fragment",
     module_type: "prebuilt_bootclasspath_fragment",
     config_namespace: "ANDROID",
