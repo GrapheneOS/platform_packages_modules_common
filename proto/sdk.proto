@@ -37,6 +37,7 @@ enum SdkModule {
 
   // S modules
   ART = 8;
+  SCHEDULING = 9;
 }
 
 // A single extension version.
