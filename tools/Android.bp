@@ -49,7 +49,11 @@ gensrcs {
     name: "cur_sdkinfo_src",
     srcs: [""],
     tools: [ "gen_sdkinfo" ],
-    cmd: "$(location) -v 1 -o $(out)",
+    product_variables: {
+        platform_sdk_extension_version: {
+            cmd: "$(location) -v %d -o $(out)",
+        }
+    }
 }
 
 prebuilt_etc {
