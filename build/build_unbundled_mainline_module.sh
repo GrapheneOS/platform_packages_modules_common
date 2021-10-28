@@ -118,8 +118,10 @@ function init() {
 
   # This script cannot handle compressed apexes
   declare -grx OVERRIDE_PRODUCT_COMPRESSED_APEX=false
-  # Unset to build using PreBuilt SDK.
-  declare -grx UNBUNDLED_BUILD_SDKS_FROM_SOURCE=true
+
+  # UNBUNDLED_BUILD_SDKS_FROM_SOURCE defaults to false, which is necessary to
+  # use prebuilt SDKs on thin branches that may not have the sources (e.g.
+  # frameworks/base).
 }
 
 function main() {
