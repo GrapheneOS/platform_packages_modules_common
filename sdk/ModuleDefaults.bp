@@ -160,6 +160,7 @@ java_defaults {
         "//frameworks/base/wifi",
         "//packages/modules:__subpackages__",
         "//packages/providers/MediaProvider:__subpackages__",
+        "//system/apex/apexd:__subpackages__",
     ],
 }
 
@@ -178,6 +179,7 @@ java_defaults {
         "//art/libartservice:__subpackages__",
         "//frameworks/base/apex:__subpackages__",
         "//packages/modules:__subpackages__",
+        "//system/apex/apexd:__subpackages__",
     ],
 }
 
