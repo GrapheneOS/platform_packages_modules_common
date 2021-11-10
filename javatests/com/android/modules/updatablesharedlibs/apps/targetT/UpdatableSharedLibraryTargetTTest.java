@@ -17,6 +17,7 @@
 package com.android.modules.updatablesharedlibs.apps.targetT;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,8 +51,16 @@ public class UpdatableSharedLibraryTargetTTest {
                 PackageManager.GET_SHARED_LIBRARY_FILES);
 
         assertThat(appInfo.sharedLibraryFiles)
-                .asList()
-                .comparingElementsUsing​(CONTAINS_SUBSTRING)
-                .doesNotContain("com.android.modules.updatablesharedlibs");
+            .asList()
+            .comparingElementsUsing​(CONTAINS_SUBSTRING)
+            .doesNotContain("com.android.modules.updatablesharedlibs");
+    }
+
+    @Test
+    public void checkHasNoApiAccess() throws Exception {
+        assertThrows(
+            ClassNotFoundException.class,
+            () -> Class.forName("com.android.modules.updatablesharedlibs.libs.before.t.Api")
+        );
     }
 }
