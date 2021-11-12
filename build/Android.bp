@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 python_test_host {
     name: "mainline_modules_sdks_test",
     main: "mainline_modules_sdks_test.py",
