@@ -16,12 +16,17 @@
 
 package com.android.modules.updatablesharedlibs;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertThrows;
 
-import com.android.internal.util.test.SystemPreparer;
+import com.android.tradefed.targetprep.TargetSetupError;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
+import com.android.internal.util.test.SystemPreparer;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,6 +53,9 @@ public class UpdatableSharedLibsTest extends BaseHostJUnit4Test {
         assumeTrue("Device does not support updating APEX", mHostUtils.isApexUpdateSupported());
         assumeTrue("Device requires root", getDevice().isAdbRoot());
 
+        // install app requiring lib before the lib is installed
+        assertInstalationFails();
+
         String apex = "test_com.android.modules.updatablesharedlibs.apex";
         mPreparer.pushResourceFile(apex, "/system/apex/" + apex);
         mPreparer.reboot();
@@ -60,5 +68,16 @@ public class UpdatableSharedLibsTest extends BaseHostJUnit4Test {
         runDeviceTests("com.android.modules.updatablesharedlibs.apps.targetS", null);
         runDeviceTests("com.android.modules.updatablesharedlibs.apps.targetT", null);
         runDeviceTests("com.android.modules.updatablesharedlibs.apps.targetTWithLib", null);
+    }
+
+    private void assertInstalationFails() throws Exception {
+        String packageName = "com.android.modules.updatablesharedlibs.apps.targetTWithLib";
+        Exception e = assertThrows(
+            TargetSetupError.class,
+            () -> installPackage(packageName + ".apk"));
+        assertThat(e).hasMessageThat().contains(
+            "Package " + packageName + " requires "
+                + "unavailable shared library "
+                + "com.android.modules.updatablesharedlibs.libs.since.t");
     }
 }
