@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 apex_key {
     name: "com.android.modules.updatablesharedlibs.key",
     public_key: "com.android.modules.updatablesharedlibs.avbpubkey",
