@@ -15,6 +15,27 @@
 # limitations under the License.
 #
 
+function init() {
+  declare -ga ARGV
+  while (($# > 0)); do
+    case $1 in
+    --py3script)
+      declare -gr py3script="$2"
+      shift 2
+      ;;
+    *)
+      ARGV+=("$1")
+      shift 1
+      ;;
+    esac
+  done
+  readonly ARGV
+
+  if [ -z "${py3script}" ]; then
+    declare -gr py3script="packages/modules/common/build/mainline_modules_sdks.py"
+  fi
+}
+
 function main() {
   if [ ! -e "build/make/core/Makefile" ]; then
     echo "$0 must be run from the top of the tree"
@@ -34,7 +55,11 @@ function main() {
   # Delegate the SDK generation to the python script. Use the python version
   # provided by the build to ensure consistency across build environments.
   export DIST_DIR OUT_DIR
-  prebuilts/build-tools/linux-x86/bin/py3-cmd packages/modules/common/build/mainline_modules_sdks.py "$@"
+
+  prebuilts/build-tools/linux-x86/bin/py3-cmd "${py3script}"
 }
 
-main "${@}"
+init "$@"
+# The wacky ${foo[@]+"${foo[@]}"}, makes bash correctly pass nothing when an
+# array is empty (necessary prior to bash 4.4).
+main ${ARGV[@]+"${ARGV[@]}"}
