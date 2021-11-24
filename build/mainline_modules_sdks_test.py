@@ -162,5 +162,18 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
         self.apply_transformations(src, transformations, expected)
 
 
+class TestFilterModules(unittest.TestCase):
+
+    def test_no_filter(self):
+        modules = mm.filter_modules(mm.MAINLINE_MODULES)
+        self.assertEqual(modules, mm.MAINLINE_MODULES)
+
+    def test_with_filter(self):
+        os.environ["TARGET_BUILD_APPS"] = "com.android.art"
+        modules = mm.filter_modules(mm.MAINLINE_MODULES)
+        expected = mm.MAINLINE_MODULES_BY_APEX["com.android.art"]
+        self.assertEqual(modules, [expected])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
