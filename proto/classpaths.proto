@@ -21,6 +21,7 @@ enum Classpath {
   BOOTCLASSPATH = 1;
   SYSTEMSERVERCLASSPATH = 2;
   DEX2OATBOOTCLASSPATH = 3;
+  STANDALONE_SYSTEMSERVER_JARS = 4;
 }
 
 // Individual entry in a classpath variable.
