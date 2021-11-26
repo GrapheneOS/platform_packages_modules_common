@@ -317,7 +317,8 @@ class SdkDistProducer:
         return os.path.join(self.out_dir, "soong/mainline-sdks",
                             f"{sdk_name}-{sdk_version}.zip")
 
-    def produce_dist(self, sdk_versions, modules):
+    def produce_dist(self, modules):
+        sdk_versions = SDK_VERSIONS
         self.build_sdks(sdk_versions, modules)
         self.populate_dist(sdk_versions, modules)
 
@@ -503,26 +504,30 @@ def apply_transformations(producer, tmp_dir, transformations):
         os.utime(path, (modified, modified))
 
 
-def main():
-    """Program entry point."""
-    if not os.path.exists("build/make/core/Makefile"):
-        sys.exit("This script must be run from the top of the tree.")
-
-    producer = SdkDistProducer(
+def create_producer():
+    return SdkDistProducer(
         # Variables initialized from environment variables that are set by the
         # calling mainline_modules_sdks.sh.
         out_dir=os.environ["OUT_DIR"],
         dist_dir=os.environ["DIST_DIR"],
     )
 
+def filter_modules(modules):
     target_build_apps = os.environ.get("TARGET_BUILD_APPS")
     if target_build_apps:
-        build_mainline_modules = [m for m in MAINLINE_MODULES
-                                  if m.apex in target_build_apps.split()]
+        target_build_apps = target_build_apps.split()
+        return [m for m in modules if m.apex in target_build_apps]
     else:
-        build_mainline_modules = MAINLINE_MODULES
+        return modules
 
-    producer.produce_dist(SDK_VERSIONS, build_mainline_modules)
+def main():
+    """Program entry point."""
+    if not os.path.exists("build/make/core/Makefile"):
+        sys.exit("This script must be run from the top of the tree.")
+
+    producer = create_producer()
+    modules = filter_modules(MAINLINE_MODULES)
+    producer.produce_dist(modules)
 
 
 if __name__ == "__main__":
