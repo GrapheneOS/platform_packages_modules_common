@@ -44,7 +44,8 @@ readonly -a DEFAULT_MODULES=(
   com.android.conscrypt
   com.android.extservices
   com.android.i18n
-  com.android.ipsec
+  # TODO(b/210694291): include ipsec module in the build
+  # com.android.ipsec
   com.android.media
   com.android.mediaprovider
   com.android.media.swcodec
@@ -55,7 +56,8 @@ readonly -a DEFAULT_MODULES=(
   com.android.runtime
   com.android.sdkext
   com.android.telephony
-  com.android.tethering
+  # TODO(b/210694291): include tethering module in the build
+  # com.android.tethering
   com.android.tzdata
   com.android.wifi
   test1_com.android.tzdata
