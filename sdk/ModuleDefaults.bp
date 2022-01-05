@@ -202,7 +202,7 @@ stubs_defaults {
         },
     },
     dist: {
-        targets: ["sdk", "win_sdk"],
+        targets: ["sdk"],
         dir: "apistubs/android/system-server/api",
     },
 }
@@ -212,7 +212,7 @@ stubs_defaults {
 java_defaults {
     name: "service-module-stubs-defaults",
     dist: {
-        targets: ["sdk", "win_sdk"],
+        targets: ["sdk"],
         dir: "apistubs/android/system-server",
     },
 }
