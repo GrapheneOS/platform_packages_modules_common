@@ -64,4 +64,14 @@ public class UpdatableSharedLibraryTargetSTest {
         String actual = (String) api.getClass().getDeclaredMethod("methodBeforeT").invoke(api);
         assertThat(actual).isEqualTo("Success");
     }
+
+    @Test
+    public void testGetSystemSharedLibraryNames() {
+        String[] libraries = sContext.getPackageManager().getSystemSharedLibraryNames();
+        assertThat(libraries)
+                .asList()
+                .containsAtLeast(
+                    "com.android.modules.updatablesharedlibs.libs.before.t",
+                    "com.android.modules.updatablesharedlibs.libs.since.t");
+    }
 }
