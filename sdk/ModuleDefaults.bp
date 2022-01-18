@@ -24,20 +24,6 @@ mainline_stubs_args =
     "--hide RequiresPermission " +
     "--enhance-documentation "
 
-// TODO: modularize this so not every module has the same list
-framework_packages_to_document = [
-    "android",
-    "dalvik",
-    "java",
-    "javax",
-    "junit",
-    "org.apache.http",
-    "org.json",
-    "org.w3c.dom",
-    "org.xml.sax",
-    "org.xmlpull",
-]
-
 // TODO: remove the hiding when server classes are cleaned up.
 mainline_framework_stubs_args =
     mainline_stubs_args +
