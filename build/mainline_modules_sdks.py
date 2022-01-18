@@ -250,6 +250,10 @@ MAINLINE_MODULES = [
         sdks=["permission-module-sdk"],
     ),
     MainlineModule(
+        apex="com.android.scheduling",
+        sdks=["scheduling-sdk"],
+    ),
+    MainlineModule(
         apex="com.android.sdkext",
         sdks=["sdkextensions-sdk"],
     ),
