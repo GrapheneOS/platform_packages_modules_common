@@ -250,6 +250,10 @@ MAINLINE_MODULES = [
         sdks=["permission-module-sdk"],
     ),
     MainlineModule(
+        apex="com.android.scheduling",
+        sdks=["scheduling-sdk"],
+    ),
+    MainlineModule(
         apex="com.android.sdkext",
         sdks=["sdkextensions-sdk"],
     ),
@@ -260,6 +264,10 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.tethering",
         sdks=["tethering-module-sdk"],
+    ),
+    MainlineModule(
+        apex="com.android.uwb",
+        sdks=["uwb-module-sdk"],
     ),
     MainlineModule(
         apex="com.android.wifi",
