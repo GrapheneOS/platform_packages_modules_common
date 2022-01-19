@@ -19,33 +19,10 @@ package {
 
 mainline_stubs_args =
     "--error UnhiddenSystemApi " +
-    "--hide BroadcastBehavior " +
     "--hide CallbackInterface " +
-    "--hide DeprecationMismatch " +
-    "--hide HiddenSuperclass " +
     "--hide HiddenTypedefConstant " +
-    "--hide HiddenTypeParameter " +
-    "--hide MissingPermission " +
     "--hide RequiresPermission " +
-    "--hide SdkConstant " +
-    "--hide Todo " +
-    "--hide Typo " +
-    "--hide UnavailableSymbol " +
     "--enhance-documentation "
-
-// TODO: modularize this so not every module has the same list
-framework_packages_to_document = [
-    "android",
-    "dalvik",
-    "java",
-    "javax",
-    "junit",
-    "org.apache.http",
-    "org.json",
-    "org.w3c.dom",
-    "org.xml.sax",
-    "org.xmlpull",
-]
 
 // TODO: remove the hiding when server classes are cleaned up.
 mainline_framework_stubs_args =
