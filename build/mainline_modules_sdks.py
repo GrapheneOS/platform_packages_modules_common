@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Builds SDK snapshots.
 
 If the environment variable TARGET_BUILD_APPS is nonempty then only the SDKs for
@@ -175,6 +174,27 @@ soong_config_module_type_import {{
         file.write("\n".join(header_lines + content_lines) + "\n")
 
 
+@dataclasses.dataclass()
+class SubprocessRunner:
+    """Runs subprocesses"""
+
+    # Destination for stdout from subprocesses.
+    #
+    # This (and the following stderr) are needed to allow the tests to be run
+    # in Intellij. This ensures that the tests are run with stdout/stderr
+    # objects that work when passed to subprocess.run(stdout/stderr). Without it
+    # the tests are run with a FlushingStringIO object that has no fileno
+    # attribute - https://youtrack.jetbrains.com/issue/PY-27883.
+    stdout: io.TextIOBase = sys.stdout
+
+    # Destination for stderr from subprocesses.
+    stderr: io.TextIOBase = sys.stderr
+
+    def run(self, *args, **kwargs):
+        return subprocess.run(
+            *args, check=True, stdout=self.stdout, stderr=self.stderr, **kwargs)
+
+
 @dataclasses.dataclass(frozen=True)
 class MainlineModule:
     """Represents a mainline module"""
@@ -294,17 +314,8 @@ class SdkDistProducer:
     directory.
     """
 
-    # Destination for stdout from subprocesses.
-    #
-    # This (and the following stderr) are needed to allow the tests to be run
-    # in Intellij. This ensures that the tests are run with stdout/stderr
-    # objects that work when passed to subprocess.run(stdout/stderr). Without it
-    # the tests are run with a FlushingStringIO object that has no fileno
-    # attribute - https://youtrack.jetbrains.com/issue/PY-27883.
-    stdout: io.TextIOBase = sys.stdout
-
-    # Destination for stderr from subprocesses.
-    stderr: io.TextIOBase = sys.stderr
+    # Used to run subprocesses for this.
+    subprocess_runner: SubprocessRunner = SubprocessRunner()
 
     # The OUT_DIR environment variable.
     out_dir: str = "uninitialized-out"
@@ -365,12 +376,7 @@ class SdkDistProducer:
             print_command(extraEnv, cmd)
             env = os.environ.copy()
             env.update(extraEnv)
-            subprocess.run(
-                cmd,
-                env=env,
-                check=True,
-                stdout=self.stdout,
-                stderr=self.stderr)
+            self.subprocess_runner.run(cmd, env=env)
 
     def unzip_current_stubs(self, sdk_name, apex_name):
         """Unzips stubs for "current" into {producer.dist_dir}/stubs/{apex}."""
@@ -484,13 +490,10 @@ def copy_zip_and_replace(producer, src_zip_path, dest_zip_path, src_dir, paths):
     # not affected by a change of directory.
     abs_src_zip_path = os.path.abspath(src_zip_path)
     abs_dest_zip_path = os.path.abspath(dest_zip_path)
-    subprocess.run(
+    producer.subprocess_runner.run(
         ["zip", "-q", abs_src_zip_path, "--out", abs_dest_zip_path] + paths,
         # Change into the source directory before running zip.
-        cwd=src_dir,
-        stdout=producer.stdout,
-        stderr=producer.stderr,
-        check=True)
+        cwd=src_dir)
 
 
 def apply_transformations(producer, tmp_dir, transformations):
@@ -516,6 +519,7 @@ def create_producer():
         dist_dir=os.environ["DIST_DIR"],
     )
 
+
 def filter_modules(modules):
     target_build_apps = os.environ.get("TARGET_BUILD_APPS")
     if target_build_apps:
@@ -523,6 +527,7 @@ def filter_modules(modules):
         return [m for m in modules if m.apex in target_build_apps]
     else:
         return modules
+
 
 def main():
     """Program entry point."""
