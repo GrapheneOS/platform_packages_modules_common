@@ -56,7 +56,7 @@ function main() {
   # provided by the build to ensure consistency across build environments.
   export DIST_DIR OUT_DIR
 
-  prebuilts/build-tools/linux-x86/bin/py3-cmd "${py3script}"
+  prebuilts/build-tools/linux-x86/bin/py3-cmd -u "${py3script}"
 }
 
 init "$@"
