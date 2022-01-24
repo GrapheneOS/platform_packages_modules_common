@@ -348,9 +348,6 @@ MAINLINE_MODULES = [
     ),
 ]
 
-# Only used by the test.
-MAINLINE_MODULES_BY_APEX = dict((m.apex, m) for m in MAINLINE_MODULES)
-
 # A list of the sdk versions to build. Usually just current but can include a
 # numeric version too.
 SDK_VERSIONS = [
