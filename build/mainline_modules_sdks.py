@@ -396,6 +396,7 @@ class SdkDistProducer:
         sdk_versions = SDK_VERSIONS
         self.build_sdks(sdk_versions, modules)
         self.populate_dist(sdk_versions, modules)
+        self.populate_stubs(modules)
 
     def build_sdks(self, sdk_versions, modules):
         self.snapshot_builder.build_snapshots(sdk_versions, modules)
@@ -410,7 +411,7 @@ class SdkDistProducer:
         extract_matching_files_from_zip(
             sdk_path, dest_dir, r"sdk_library/[^/]+/[^/]+\.(txt|jar|srcjar)")
 
-    def populate_dist(self, sdk_versions, modules):
+    def populate_stubs(self, modules):
         # TODO(b/199759953): Remove stubs once it is no longer used by gantry.
         # Clear and populate the stubs directory.
         stubs_dir = os.path.join(self.dist_dir, "stubs")
@@ -424,6 +425,7 @@ class SdkDistProducer:
                 if sdk.endswith("-sdk"):
                     self.unzip_current_stubs(sdk, apex)
 
+    def populate_dist(self, sdk_versions, modules):
         # Clear and populate the mainline-sdks dist directory.
         sdks_dist_dir = os.path.join(self.dist_dir, "mainline-sdks")
         shutil.rmtree(sdks_dist_dir, ignore_errors=True)
