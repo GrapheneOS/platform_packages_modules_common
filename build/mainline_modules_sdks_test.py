@@ -22,6 +22,8 @@ import zipfile
 
 import mainline_modules_sdks as mm
 
+MAINLINE_MODULES_BY_APEX = dict((m.apex, m) for m in mm.MAINLINE_MODULES)
+
 
 class FakeSnapshotBuilder(mm.SnapshotBuilder):
     """A fake snapshot builder that does not run the build.
@@ -62,8 +64,8 @@ class TestProduceDist(unittest.TestCase):
             os.mkdir(tmp_dist_dir)
 
             modules = [
-                mm.MAINLINE_MODULES_BY_APEX["com.android.art"],
-                mm.MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
+                MAINLINE_MODULES_BY_APEX["com.android.art"],
+                MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
             ]
 
             subprocess_runner = mm.SubprocessRunner()
@@ -161,7 +163,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
         expected = readTestData("ipsec_Android.bp.expected")
 
-        module = mm.MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
+        module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
         transformations = module.transformations()
 
         self.apply_transformations(src, transformations, expected)
@@ -177,7 +179,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
         expected = readTestData("art_Android.bp.expected")
 
-        module = mm.MAINLINE_MODULES_BY_APEX["com.android.art"]
+        module = MAINLINE_MODULES_BY_APEX["com.android.art"]
         transformations = module.transformations()
 
         self.apply_transformations(src, transformations, expected)
@@ -192,7 +194,7 @@ class TestFilterModules(unittest.TestCase):
     def test_with_filter(self):
         os.environ["TARGET_BUILD_APPS"] = "com.android.art"
         modules = mm.filter_modules(mm.MAINLINE_MODULES)
-        expected = mm.MAINLINE_MODULES_BY_APEX["com.android.art"]
+        expected = MAINLINE_MODULES_BY_APEX["com.android.art"]
         self.assertEqual(modules, [expected])
 
 
