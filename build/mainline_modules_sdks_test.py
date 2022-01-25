@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for mainline_modules_sdks.py."""
-
 from pathlib import Path
 import os
 import tempfile
@@ -23,13 +22,18 @@ import zipfile
 
 import mainline_modules_sdks as mm
 
+MAINLINE_MODULES_BY_APEX = dict((m.apex, m) for m in mm.MAINLINE_MODULES)
 
-class TestPopulateDist(unittest.TestCase):
 
-    def create_snapshot_file(self, out_dir, name, version):
-        sdks_out_dir = Path(out_dir, "soong/mainline-sdks")
-        sdks_out_dir.mkdir(parents=True, exist_ok=True)
-        zip_file = Path(sdks_out_dir, f"{name}-{version}.zip")
+class FakeSnapshotBuilder(mm.SnapshotBuilder):
+    """A fake snapshot builder that does not run the build.
+
+    This skips the whole build process and just creates some fake sdk
+    modules.
+    """
+
+    def create_snapshot_file(self, name, version):
+        zip_file = Path(self.get_sdk_path(name, version))
         with zipfile.ZipFile(zip_file, "w") as z:
             z.writestr("Android.bp", "")
             if name.endswith("-sdk"):
@@ -37,6 +41,19 @@ class TestPopulateDist(unittest.TestCase):
                 z.writestr("sdk_library/public/source.srcjar", "")
                 z.writestr("sdk_library/public/lib.jar", "")
                 z.writestr("sdk_library/public/api.txt", "")
+
+    def build_snapshots(self, sdk_versions, modules):
+        # Create input file structure.
+        sdks_out_dir = Path(self.get_mainline_sdks_path())
+        sdks_out_dir.mkdir(parents=True, exist_ok=True)
+        # Create a fake sdk zip file for each module.
+        for module in modules:
+            for sdk in module.sdks:
+                for sdk_version in sdk_versions:
+                    self.create_snapshot_file(sdk, sdk_version)
+
+
+class TestProduceDist(unittest.TestCase):
 
     def test(self):
         """Verify the dist/mainline-sdks directory is populated correctly"""
@@ -47,22 +64,24 @@ class TestPopulateDist(unittest.TestCase):
             os.mkdir(tmp_dist_dir)
 
             modules = [
-                mm.MAINLINE_MODULES_BY_APEX["com.android.art"],
-                mm.MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
+                MAINLINE_MODULES_BY_APEX["com.android.art"],
+                MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
             ]
 
-            # Create input file structure.
-            for module in modules:
-                for sdk in module.sdks:
-                    self.create_snapshot_file(tmp_out_dir, sdk, "current")
+            subprocess_runner = mm.SubprocessRunner()
+
+            snapshot_builder = FakeSnapshotBuilder(
+                subprocess_runner=subprocess_runner,
+                out_dir=tmp_out_dir,
+            )
 
             producer = mm.SdkDistProducer(
-                out_dir=tmp_out_dir,
+                subprocess_runner=subprocess_runner,
+                snapshot_builder=snapshot_builder,
                 dist_dir=tmp_dist_dir,
             )
 
-            sdk_versions = ["current"]
-            producer.populate_dist(sdk_versions, modules)
+            producer.produce_dist(modules)
 
             files = []
             for abs_dir, _, filenames in os.walk(tmp_dist_dir):
@@ -114,7 +133,11 @@ def readTestData(relative_path):
 class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
     def apply_transformations(self, src, transformations, expected):
-        producer = mm.SdkDistProducer(script=self._testMethodName)
+        producer = mm.SdkDistProducer(
+            subprocess_runner=None,
+            snapshot_builder=None,
+            script=self._testMethodName,
+        )
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = os.path.join(tmp_dir, "Android.bp")
@@ -140,7 +163,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
         expected = readTestData("ipsec_Android.bp.expected")
 
-        module = mm.MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
+        module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
         transformations = module.transformations()
 
         self.apply_transformations(src, transformations, expected)
@@ -156,7 +179,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
         expected = readTestData("art_Android.bp.expected")
 
-        module = mm.MAINLINE_MODULES_BY_APEX["com.android.art"]
+        module = MAINLINE_MODULES_BY_APEX["com.android.art"]
         transformations = module.transformations()
 
         self.apply_transformations(src, transformations, expected)
@@ -171,7 +194,7 @@ class TestFilterModules(unittest.TestCase):
     def test_with_filter(self):
         os.environ["TARGET_BUILD_APPS"] = "com.android.art"
         modules = mm.filter_modules(mm.MAINLINE_MODULES)
-        expected = mm.MAINLINE_MODULES_BY_APEX["com.android.art"]
+        expected = MAINLINE_MODULES_BY_APEX["com.android.art"]
         self.assertEqual(modules, [expected])
 
 
