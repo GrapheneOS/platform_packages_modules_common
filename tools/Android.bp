@@ -45,10 +45,10 @@ python_binary_host {
     libs: ["sdk_proto_python"],
 }
 
-gensrcs {
+genrule {
     name: "cur_sdkinfo_src",
-    srcs: [""],
     tools: [ "gen_sdkinfo" ],
+    out: ["sdkinfo.pb"],
     product_variables: {
         platform_sdk_extension_version: {
             cmd: "$(location) -v %d -o $(out)",
