@@ -52,7 +52,7 @@ public class UpdatableSharedLibraryTargetTTest {
 
         assertThat(appInfo.sharedLibraryFiles)
             .asList()
-            .comparingElementsUsing​(CONTAINS_SUBSTRING)
+            .comparingElementsUsing(CONTAINS_SUBSTRING)
             .doesNotContain("com.android.modules.updatablesharedlibs");
     }
 
