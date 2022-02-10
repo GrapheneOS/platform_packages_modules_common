@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for mainline_modules_sdks.py."""
+import dataclasses
 from pathlib import Path
 import os
 import tempfile
@@ -42,7 +43,7 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                 z.writestr("sdk_library/public/lib.jar", "")
                 z.writestr("sdk_library/public/api.txt", "")
 
-    def build_snapshots(self, sdk_versions, modules):
+    def build_snapshots(self, build_release, sdk_versions, modules):
         # Create input file structure.
         sdks_out_dir = Path(self.get_mainline_sdks_path())
         sdks_out_dir.mkdir(parents=True, exist_ok=True)
@@ -75,13 +76,21 @@ class TestProduceDist(unittest.TestCase):
                 out_dir=tmp_out_dir,
             )
 
+            build_releases = [
+                mm.Q,
+                mm.R,
+                mm.S,
+                mm.LATEST,
+                mm.LEGACY_BUILD_RELEASE,
+            ]
+
             producer = mm.SdkDistProducer(
                 subprocess_runner=subprocess_runner,
                 snapshot_builder=snapshot_builder,
                 dist_dir=tmp_dist_dir,
             )
 
-            producer.produce_dist(modules)
+            producer.produce_dist(modules, build_releases)
 
             files = []
             for abs_dir, _, filenames in os.walk(tmp_dist_dir):
@@ -89,20 +98,33 @@ class TestProduceDist(unittest.TestCase):
                 for f in filenames:
                     files.append(os.path.join(rel_dir, f))
             # pylint: disable=line-too-long
-            self.assertEqual([
-                "mainline-sdks/current/com.android.art/host-exports/art-module-host-exports-current.zip",
-                "mainline-sdks/current/com.android.art/sdk/art-module-sdk-current.zip",
-                "mainline-sdks/current/com.android.art/test-exports/art-module-test-exports-current.zip",
-                "mainline-sdks/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
-                "stubs/com.android.art/sdk_library/public/api.txt",
-                "stubs/com.android.art/sdk_library/public/lib.jar",
-                "stubs/com.android.art/sdk_library/public/removed.txt",
-                "stubs/com.android.art/sdk_library/public/source.srcjar",
-                "stubs/com.android.ipsec/sdk_library/public/api.txt",
-                "stubs/com.android.ipsec/sdk_library/public/lib.jar",
-                "stubs/com.android.ipsec/sdk_library/public/removed.txt",
-                "stubs/com.android.ipsec/sdk_library/public/source.srcjar",
-            ], sorted(files))
+            self.assertEqual(
+                [
+                    # Legacy copy of the snapshots, for use by tools that don't support build specific snapshots.
+                    "mainline-sdks/current/com.android.art/host-exports/art-module-host-exports-current.zip",
+                    "mainline-sdks/current/com.android.art/sdk/art-module-sdk-current.zip",
+                    "mainline-sdks/current/com.android.art/test-exports/art-module-test-exports-current.zip",
+                    "mainline-sdks/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                    # Build specific snapshots.
+                    "mainline-sdks/for-S-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
+                    "mainline-sdks/for-S-build/current/com.android.art/sdk/art-module-sdk-current.zip",
+                    "mainline-sdks/for-S-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
+                    "mainline-sdks/for-S-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                    "mainline-sdks/for-latest-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
+                    "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current.zip",
+                    "mainline-sdks/for-latest-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
+                    "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                    # Legacy stubs directory containing unpacked java_sdk_library artifacts.
+                    "stubs/com.android.art/sdk_library/public/api.txt",
+                    "stubs/com.android.art/sdk_library/public/lib.jar",
+                    "stubs/com.android.art/sdk_library/public/removed.txt",
+                    "stubs/com.android.art/sdk_library/public/source.srcjar",
+                    "stubs/com.android.ipsec/sdk_library/public/api.txt",
+                    "stubs/com.android.ipsec/sdk_library/public/lib.jar",
+                    "stubs/com.android.ipsec/sdk_library/public/removed.txt",
+                    "stubs/com.android.ipsec/sdk_library/public/source.srcjar",
+                ],
+                sorted(files))
 
 
 def pathToTestData(relative_path):
