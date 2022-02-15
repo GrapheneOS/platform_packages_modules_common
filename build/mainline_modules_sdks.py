@@ -13,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Builds SDK snapshots.
 
 If the environment variable TARGET_BUILD_APPS is nonempty then only the SDKs for
@@ -28,6 +27,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import typing
+from typing import Callable, List
 import zipfile
 
 
@@ -175,6 +176,235 @@ soong_config_module_type_import {{
         file.write("\n".join(header_lines + content_lines) + "\n")
 
 
+@dataclasses.dataclass()
+class SubprocessRunner:
+    """Runs subprocesses"""
+
+    # Destination for stdout from subprocesses.
+    #
+    # This (and the following stderr) are needed to allow the tests to be run
+    # in Intellij. This ensures that the tests are run with stdout/stderr
+    # objects that work when passed to subprocess.run(stdout/stderr). Without it
+    # the tests are run with a FlushingStringIO object that has no fileno
+    # attribute - https://youtrack.jetbrains.com/issue/PY-27883.
+    stdout: io.TextIOBase = sys.stdout
+
+    # Destination for stderr from subprocesses.
+    stderr: io.TextIOBase = sys.stderr
+
+    def run(self, *args, **kwargs):
+        return subprocess.run(
+            *args, check=True, stdout=self.stdout, stderr=self.stderr, **kwargs)
+
+
+@dataclasses.dataclass()
+class SnapshotBuilder:
+    """Builds sdk snapshots"""
+
+    # Used to run subprocesses for building snapshots.
+    subprocess_runner: SubprocessRunner
+
+    # The OUT_DIR environment variable.
+    out_dir: str
+
+    def get_mainline_sdks_path(self):
+        """Get the path to the Soong mainline-sdks directory"""
+        return os.path.join(self.out_dir, "soong/mainline-sdks")
+
+    def get_sdk_path(self, sdk_name, sdk_version):
+        """Get the path to the sdk snapshot zip file produced by soong"""
+        return os.path.join(self.get_mainline_sdks_path(),
+                            f"{sdk_name}-{sdk_version}.zip")
+
+    def build_snapshots(self, build_release, sdk_versions, modules):
+        # Build the SDKs once for each version.
+        for sdk_version in sdk_versions:
+            # Compute the paths to all the Soong generated sdk snapshot files
+            # required by this script.
+            paths = [
+                self.get_sdk_path(sdk, sdk_version)
+                for module in modules
+                for sdk in module.sdks
+            ]
+
+            # Extra environment variables to pass to the build process.
+            extraEnv = {
+                # TODO(ngeoffray): remove SOONG_ALLOW_MISSING_DEPENDENCIES, but
+                #  we currently break without it.
+                "SOONG_ALLOW_MISSING_DEPENDENCIES": "true",
+                # Set SOONG_SDK_SNAPSHOT_USE_SRCJAR to generate .srcjars inside
+                # sdk zip files as expected by prebuilt drop.
+                "SOONG_SDK_SNAPSHOT_USE_SRCJAR": "true",
+                # Set SOONG_SDK_SNAPSHOT_VERSION to generate the appropriately
+                # tagged version of the sdk.
+                "SOONG_SDK_SNAPSHOT_VERSION": sdk_version,
+            }
+            extraEnv.update(build_release.soong_env)
+
+            # Unless explicitly specified in the calling environment set
+            # TARGET_BUILD_VARIANT=user.
+            # This MUST be identical to the TARGET_BUILD_VARIANT used to build
+            # the corresponding APEXes otherwise it could result in different
+            # hidden API flags, see http://b/202398851#comment29 for more info.
+            targetBuildVariant = os.environ.get("TARGET_BUILD_VARIANT", "user")
+            cmd = [
+                "build/soong/soong_ui.bash",
+                "--make-mode",
+                "--soong-only",
+                f"TARGET_BUILD_VARIANT={targetBuildVariant}",
+                "TARGET_PRODUCT=mainline_sdk",
+                "MODULE_BUILD_FROM_SOURCE=true",
+                "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
+            ] + paths
+            print_command(extraEnv, cmd)
+            env = os.environ.copy()
+            env.update(extraEnv)
+            self.subprocess_runner.run(cmd, env=env)
+
+
+# A list of the sdk versions to build. Usually just current but can include a
+# numeric version too.
+SDK_VERSIONS = [
+    # Suitable for overriding the source modules with prefer:true.
+    # Unlike "unversioned" this mode also adds "@current" suffixed modules
+    # with the same prebuilts (which are never preferred).
+    "current",
+    # Insert additional sdk versions needed for the latest build release.
+]
+
+# The initially empty list of build releases. Every BuildRelease that is created
+# automatically appends itself to this list.
+ALL_BUILD_RELEASES = []
+
+
+@dataclasses.dataclass(frozen=True)
+class BuildRelease:
+    """Represents a build release"""
+
+    # The name of the build release, e.g. Q, R, S, T, etc.
+    name: str
+
+    # The function to call to create the snapshot in the dist, that covers
+    # building and copying the snapshot into the dist.
+    creator: Callable[
+        ["BuildRelease", "SdkDistProducer", List["MainlineModule"]], None]
+
+    # The sub-directory of dist/mainline-sdks into which the build release
+    # specific snapshots will be copied.
+    #
+    # Defaults to for-<name>-build.
+    sub_dir: str = None
+
+    # Additional environment variables to pass to Soong when building the
+    # snapshots for this build release.
+    #
+    # Defaults to {
+    #     "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": <name>,
+    # }
+    soong_env: typing.Dict[str, str] = None
+
+    # The sdk versions that need to be generated for this build release.
+    sdk_versions: List[str] = \
+        dataclasses.field(default_factory=lambda: SDK_VERSIONS)
+
+    # The position of this instance within the BUILD_RELEASES list.
+    ordinal: int = dataclasses.field(default=-1, init=False)
+
+    def __post_init__(self):
+        # The following use object.__setattr__ as this object is frozen and
+        # attempting to set the fields directly would cause an exception to be
+        # thrown.
+        object.__setattr__(self, "ordinal", len(ALL_BUILD_RELEASES))
+        # Add this to the end of the list of all build releases.
+        ALL_BUILD_RELEASES.append(self)
+        # If no sub_dir was specified then set the default.
+        if self.sub_dir is None:
+            object.__setattr__(self, "sub_dir", f"for-{self.name}-build")
+        # If no soong_env was specified then set the default.
+        if self.soong_env is None:
+            object.__setattr__(
+                self,
+                "soong_env",
+                {
+                    # Set SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE to generate a
+                    # snapshot suitable for a specific target build release.
+                    "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": self.name,
+                })
+
+    def __le__(self, other):
+        return self.ordinal <= other.ordinal
+
+
+def create_no_dist_snapshot(build_release: BuildRelease,
+                            producer: "SdkDistProducer",
+                            modules: List["MainlineModule"]):
+    """A place holder dist snapshot creation function that does nothing."""
+    print(f"create_no_dist_snapshot for modules {[m.apex for m in modules]}")
+    return
+
+
+def create_sdk_snapshots_in_Soong(build_release: BuildRelease,
+                                  producer: "SdkDistProducer",
+                                  modules: List["MainlineModule"]):
+    """Builds sdks and populates the dist."""
+    producer.produce_dist_for_build_release(build_release, modules)
+    return
+
+
+def reuse_latest_sdk_snapshots(build_release: BuildRelease,
+                               producer: "SdkDistProducer",
+                               modules: List["MainlineModule"]):
+    """Copies the snapshots from the latest build."""
+    producer.populate_dist(build_release, build_release.sdk_versions, modules)
+    return
+
+
+Q = BuildRelease(
+    name="Q",
+    # At the moment we do not generate a snapshot for Q.
+    creator=create_no_dist_snapshot,
+)
+R = BuildRelease(
+    name="R",
+    # At the moment we do not generate a snapshot for R.
+    creator=create_no_dist_snapshot,
+)
+S = BuildRelease(
+    name="S",
+    # Generate a snapshot for S using Soong.
+    creator=create_sdk_snapshots_in_Soong,
+)
+
+# Insert additional BuildRelease definitions for following releases here,
+# before LATEST.
+
+# The build release for the latest build supported by this build, i.e. the
+# current build. This must be the last BuildRelease defined in this script,
+# before LEGACY_BUILD_RELEASE.
+LATEST = BuildRelease(
+    name="latest",
+    creator=create_sdk_snapshots_in_Soong,
+    # There are no build release specific environment variables to pass to
+    # Soong.
+    soong_env={},
+)
+
+# The build release to populate the legacy dist structure that does not specify
+# a particular build release. This MUST come after LATEST so that it includes
+# all the modules for which sdk snapshot source is available.
+LEGACY_BUILD_RELEASE = BuildRelease(
+    name="legacy",
+    # There is no build release specific sub directory.
+    sub_dir="",
+    # There are no build release specific environment variables to pass to
+    # Soong.
+    soong_env={},
+    # Do not create new snapshots, simply use the snapshots generated for
+    # latest.
+    creator=reuse_latest_sdk_snapshots,
+)
+
+
 @dataclasses.dataclass(frozen=True)
 class MainlineModule:
     """Represents a mainline module"""
@@ -183,6 +413,19 @@ class MainlineModule:
 
     # The names of the sdk and module_exports.
     sdks: list[str]
+
+    # The first build release in which the SDK snapshot for this module is
+    # needed.
+    #
+    # Note: This is not necessarily the same build release in which the SDK
+    #       source was first included. So, a module that was added in build T
+    #       could potentially be used in an S release and so its SDK will need
+    #       to be made available for S builds.
+    #
+    # Defaults to the latest build, i.e. the build on which this script is run
+    # as the snapshot is assumed to be needed in the build containing the sdk
+    # source.
+    first_release: BuildRelease = LATEST
 
     # The configuration variable, defaults to ANDROID:module_build_from_source
     configVar: ConfigVar = ConfigVar(
@@ -207,6 +450,10 @@ class MainlineModule:
                 configBpDefFile=self.configBpDefFile),
         ]
 
+    def is_required_for(self, target_build_release):
+        """True if this module is required for the target build release."""
+        return self.first_release <= target_build_release
+
 
 # List of mainline modules.
 MAINLINE_MODULES = [
@@ -217,6 +464,7 @@ MAINLINE_MODULES = [
             "art-module-test-exports",
             "art-module-host-exports",
         ],
+        first_release=S,
         # Override the config... fields.
         configVar=ConfigVar(
             namespace="art_module",
@@ -232,51 +480,56 @@ MAINLINE_MODULES = [
             "conscrypt-module-test-exports",
             "conscrypt-module-host-exports",
         ],
+        first_release=Q,
     ),
     MainlineModule(
         apex="com.android.ipsec",
         sdks=["ipsec-module-sdk"],
+        first_release=S,
     ),
     MainlineModule(
         apex="com.android.media",
         sdks=["media-module-sdk"],
+        first_release=R,
     ),
     MainlineModule(
         apex="com.android.mediaprovider",
         sdks=["mediaprovider-module-sdk"],
+        first_release=R,
     ),
     MainlineModule(
         apex="com.android.permission",
         sdks=["permission-module-sdk"],
+        first_release=R,
+    ),
+    MainlineModule(
+        apex="com.android.scheduling",
+        sdks=["scheduling-sdk"],
     ),
     MainlineModule(
         apex="com.android.sdkext",
         sdks=["sdkextensions-sdk"],
+        first_release=R,
     ),
     MainlineModule(
         apex="com.android.os.statsd",
         sdks=["statsd-module-sdk"],
+        first_release=R,
     ),
     MainlineModule(
         apex="com.android.tethering",
         sdks=["tethering-module-sdk"],
+        first_release=R,
+    ),
+    MainlineModule(
+        apex="com.android.uwb",
+        sdks=["uwb-module-sdk"],
     ),
     MainlineModule(
         apex="com.android.wifi",
         sdks=["wifi-module-sdk"],
+        first_release=R,
     ),
-]
-
-# Only used by the test.
-MAINLINE_MODULES_BY_APEX = dict((m.apex, m) for m in MAINLINE_MODULES)
-
-# A list of the sdk versions to build. Usually just current but can include a
-# numeric version too.
-SDK_VERSIONS = [
-    # Suitable for overriding the source modules with prefer:true.
-    # Unlike "unversioned" this mode also adds "@current" suffixed modules
-    # with the same prebuilts (which are never preferred).
-    "current",
 ]
 
 
@@ -290,20 +543,11 @@ class SdkDistProducer:
     directory.
     """
 
-    # Destination for stdout from subprocesses.
-    #
-    # This (and the following stderr) are needed to allow the tests to be run
-    # in Intellij. This ensures that the tests are run with stdout/stderr
-    # objects that work when passed to subprocess.run(stdout/stderr). Without it
-    # the tests are run with a FlushingStringIO object that has no fileno
-    # attribute - https://youtrack.jetbrains.com/issue/PY-27883.
-    stdout: io.TextIOBase = sys.stdout
+    # Used to run subprocesses for this.
+    subprocess_runner: SubprocessRunner
 
-    # Destination for stderr from subprocesses.
-    stderr: io.TextIOBase = sys.stderr
-
-    # The OUT_DIR environment variable.
-    out_dir: str = "uninitialized-out"
+    # Builds sdk snapshots
+    snapshot_builder: SnapshotBuilder
 
     # The DIST_DIR environment variable.
     dist_dir: str = "uninitialized-dist"
@@ -312,65 +556,43 @@ class SdkDistProducer:
     # transformed to document where the changes came from.
     script: str = sys.argv[0]
 
-    def get_sdk_path(self, sdk_name, sdk_version):
-        """Get the path to the sdk snapshot zip file produced by soong"""
-        return os.path.join(self.out_dir, "soong/mainline-sdks",
-                            f"{sdk_name}-{sdk_version}.zip")
+    # The path to the mainline-sdks dist directory.
+    #
+    # Initialized in __post_init__().
+    mainline_sdks_dir: str = dataclasses.field(init=False)
 
-    def produce_dist(self, modules):
-        sdk_versions = SDK_VERSIONS
-        self.build_sdks(sdk_versions, modules)
-        self.populate_dist(sdk_versions, modules)
+    def __post_init__(self):
+        self.mainline_sdks_dir = os.path.join(self.dist_dir, "mainline-sdks")
 
-    def build_sdks(self, sdk_versions, modules):
-        # Build the SDKs once for each version.
-        for sdk_version in sdk_versions:
-            # Compute the paths to all the Soong generated sdk snapshot files
-            # required by this script.
-            paths = [
-                self.get_sdk_path(sdk, sdk_version)
-                for module in modules
-                for sdk in module.sdks
+    def prepare(self):
+        # Clear the mainline-sdks dist directory.
+        shutil.rmtree(self.mainline_sdks_dir, ignore_errors=True)
+
+    def produce_dist(self, modules, build_releases):
+        # Prepare the dist directory for the sdks.
+        self.prepare()
+
+        for build_release in build_releases:
+            # Only build modules that are required for this build release.
+            filtered_modules = [
+                m for m in modules if m.is_required_for(build_release)
             ]
+            if filtered_modules:
+                print(f"Building SDK snapshots for {build_release.name}"
+                      f" build release")
+                build_release.creator(build_release, self, filtered_modules)
 
-            # TODO(ngeoffray): remove SOONG_ALLOW_MISSING_DEPENDENCIES, but we
-            # currently break without it.
-            #
-            # Set SOONG_SDK_SNAPSHOT_USE_SRCJAR to generate .srcjars inside sdk
-            # zip files as expected by prebuilt drop.
-            extraEnv = {
-                "SOONG_ALLOW_MISSING_DEPENDENCIES": "true",
-                "SOONG_SDK_SNAPSHOT_USE_SRCJAR": "true",
-                "SOONG_SDK_SNAPSHOT_VERSION": sdk_version,
-            }
-            # Unless explicitly specified in the calling environment set
-            # TARGET_BUILD_VARIANT=user.
-            # This MUST be identical to the TARGET_BUILD_VARIANT used to build
-            # the corresponding APEXes otherwise it could result in different
-            # hidden API flags, see http://b/202398851#comment29 for more info.
-            targetBuildVariant = os.environ.get("TARGET_BUILD_VARIANT", "user")
-            cmd = [
-                "build/soong/soong_ui.bash",
-                "--make-mode",
-                "--soong-only",
-                f"TARGET_BUILD_VARIANT={targetBuildVariant}",
-                "TARGET_PRODUCT=mainline_sdk",
-                "MODULE_BUILD_FROM_SOURCE=true",
-                "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
-            ] + paths
-            print_command(extraEnv, cmd)
-            env = os.environ.copy()
-            env.update(extraEnv)
-            subprocess.run(
-                cmd,
-                env=env,
-                check=True,
-                stdout=self.stdout,
-                stderr=self.stderr)
+        self.populate_stubs(modules)
+
+    def produce_dist_for_build_release(self, build_release, modules):
+        sdk_versions = build_release.sdk_versions
+        self.snapshot_builder.build_snapshots(build_release, sdk_versions,
+                                              modules)
+        self.populate_dist(build_release, sdk_versions, modules)
 
     def unzip_current_stubs(self, sdk_name, apex_name):
         """Unzips stubs for "current" into {producer.dist_dir}/stubs/{apex}."""
-        sdk_path = self.get_sdk_path(sdk_name, "current")
+        sdk_path = self.snapshot_builder.get_sdk_path(sdk_name, "current")
         dest_dir = os.path.join(self.dist_dir, "stubs", apex_name)
         print(
             f"Extracting java_sdk_library files from {sdk_path} to {dest_dir}")
@@ -378,7 +600,7 @@ class SdkDistProducer:
         extract_matching_files_from_zip(
             sdk_path, dest_dir, r"sdk_library/[^/]+/[^/]+\.(txt|jar|srcjar)")
 
-    def populate_dist(self, sdk_versions, modules):
+    def populate_stubs(self, modules):
         # TODO(b/199759953): Remove stubs once it is no longer used by gantry.
         # Clear and populate the stubs directory.
         stubs_dir = os.path.join(self.dist_dir, "stubs")
@@ -392,9 +614,9 @@ class SdkDistProducer:
                 if sdk.endswith("-sdk"):
                     self.unzip_current_stubs(sdk, apex)
 
-        # Clear and populate the mainline-sdks dist directory.
-        sdks_dist_dir = os.path.join(self.dist_dir, "mainline-sdks")
-        shutil.rmtree(sdks_dist_dir, ignore_errors=True)
+    def populate_dist(self, build_release, sdk_versions, modules):
+        build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
+                                              build_release.sub_dir)
 
         for module in modules:
             apex = module.apex
@@ -408,9 +630,10 @@ class SdkDistProducer:
                             f" ^[^-]+-(module-)?(sdk|host-exports|test-exports)"
                         )
 
-                    sdk_dist_dir = os.path.join(sdks_dist_dir, sdk_version,
-                                                apex, subdir)
-                    sdk_path = self.get_sdk_path(sdk, sdk_version)
+                    sdk_dist_dir = os.path.join(build_release_dist_dir,
+                                                sdk_version, apex, subdir)
+                    sdk_path = self.snapshot_builder.get_sdk_path(
+                        sdk, sdk_version)
                     self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_dir,
                                                module.transformations())
 
@@ -480,13 +703,10 @@ def copy_zip_and_replace(producer, src_zip_path, dest_zip_path, src_dir, paths):
     # not affected by a change of directory.
     abs_src_zip_path = os.path.abspath(src_zip_path)
     abs_dest_zip_path = os.path.abspath(dest_zip_path)
-    subprocess.run(
+    producer.subprocess_runner.run(
         ["zip", "-q", abs_src_zip_path, "--out", abs_dest_zip_path] + paths,
         # Change into the source directory before running zip.
-        cwd=src_dir,
-        stdout=producer.stdout,
-        stderr=producer.stderr,
-        check=True)
+        cwd=src_dir)
 
 
 def apply_transformations(producer, tmp_dir, transformations):
@@ -505,12 +725,22 @@ def apply_transformations(producer, tmp_dir, transformations):
 
 
 def create_producer():
-    return SdkDistProducer(
-        # Variables initialized from environment variables that are set by the
-        # calling mainline_modules_sdks.sh.
-        out_dir=os.environ["OUT_DIR"],
-        dist_dir=os.environ["DIST_DIR"],
+    # Variables initialized from environment variables that are set by the
+    # calling mainline_modules_sdks.sh.
+    out_dir = os.environ["OUT_DIR"]
+    dist_dir = os.environ["DIST_DIR"]
+
+    subprocess_runner = SubprocessRunner()
+    snapshot_builder = SnapshotBuilder(
+        subprocess_runner=subprocess_runner,
+        out_dir=out_dir,
     )
+    return SdkDistProducer(
+        subprocess_runner=subprocess_runner,
+        snapshot_builder=snapshot_builder,
+        dist_dir=dist_dir,
+    )
+
 
 def filter_modules(modules):
     target_build_apps = os.environ.get("TARGET_BUILD_APPS")
@@ -520,6 +750,7 @@ def filter_modules(modules):
     else:
         return modules
 
+
 def main():
     """Program entry point."""
     if not os.path.exists("build/make/core/Makefile"):
@@ -527,7 +758,8 @@ def main():
 
     producer = create_producer()
     modules = filter_modules(MAINLINE_MODULES)
-    producer.produce_dist(modules)
+
+    producer.produce_dist(modules, ALL_BUILD_RELEASES)
 
 
 if __name__ == "__main__":
