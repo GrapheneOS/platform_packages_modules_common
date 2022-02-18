@@ -374,6 +374,11 @@ S = BuildRelease(
     # Generate a snapshot for S using Soong.
     creator=create_sdk_snapshots_in_Soong,
 )
+Tiramisu = BuildRelease(
+    name="Tiramisu",
+    # Generate a snapshot for Tiramisu using Soong.
+    creator=create_sdk_snapshots_in_Soong,
+)
 
 # Insert additional BuildRelease definitions for following releases here,
 # before LATEST.
