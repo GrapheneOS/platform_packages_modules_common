@@ -498,6 +498,10 @@ MAINLINE_MODULES = [
         first_release=R,
     ),
     MainlineModule(
+        apex="com.android.ondevicepersonalization",
+        sdks=["ondevicepersonalization-module-sdk"],
+    ),
+    MainlineModule(
         apex="com.android.permission",
         sdks=["permission-module-sdk"],
         first_release=R,
