@@ -505,6 +505,7 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.ondevicepersonalization",
         sdks=["ondevicepersonalization-module-sdk"],
+        first_release=Tiramisu,
     ),
     MainlineModule(
         apex="com.android.permission",
