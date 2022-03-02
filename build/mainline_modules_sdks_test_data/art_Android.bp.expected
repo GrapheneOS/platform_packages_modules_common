@@ -18,7 +18,7 @@ package {
 
 art_prebuilt_prebuilt_bootclasspath_fragment {
     name: "art-bootclasspath-fragment",
-    // Do not prefer prebuilt if SOONG_CONFIG_art_module_source_build is true.
+    // Do not prefer prebuilt if the Soong config variable "source_build" in namespace "art_module" is true.
     prefer: true,
     soong_config_variables: {
         source_build: {
@@ -63,7 +63,7 @@ art_prebuilt_prebuilt_bootclasspath_fragment {
 
 art_prebuilt_prebuilt_platform_compat_config {
     name: "libcore-platform-compat-config",
-    // Do not prefer prebuilt if SOONG_CONFIG_art_module_source_build is true.
+    // Do not prefer prebuilt if the Soong config variable "source_build" in namespace "art_module" is true.
     prefer: true,
     soong_config_variables: {
         source_build: {
@@ -82,7 +82,7 @@ art_prebuilt_prebuilt_platform_compat_config {
 
 art_prebuilt_java_import {
     name: "core-oj",
-    // Do not prefer prebuilt if SOONG_CONFIG_art_module_source_build is true.
+    // Do not prefer prebuilt if the Soong config variable "source_build" in namespace "art_module" is true.
     prefer: true,
     soong_config_variables: {
         source_build: {
