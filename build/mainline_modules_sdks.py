@@ -134,7 +134,7 @@ class SoongConfigBoilerplateInserter(FileTransformation):
                 namespace = self.configVar.namespace
                 name = self.configVar.name
                 module_content.append(f"""\
-    // Do not prefer prebuilt if SOONG_CONFIG_{namespace}_{name} is true.
+    // Do not prefer prebuilt if the Soong config variable "{name}" in namespace "{namespace}" is true.
     prefer: true,
     soong_config_variables: {{
         {name}: {{
