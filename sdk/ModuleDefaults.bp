@@ -194,3 +194,36 @@ java_defaults {
         dir: "apistubs/android/system-server",
     },
 }
+
+// These apex_defaults serve as a common place to add properties which should
+// affect all mainline modules.
+apex_defaults {
+    name: "q-launched-apex-module",
+    min_sdk_version: "29",
+    updatable: true,
+    defaults_visibility: ["//visibility:public"],
+}
+
+apex_defaults {
+    name: "r-launched-apex-module",
+    min_sdk_version: "30",
+    updatable: true,
+    defaults_visibility: ["//visibility:public"],
+}
+
+apex_defaults {
+    name: "s-launched-apex-module",
+    min_sdk_version: "31",
+    updatable: true,
+    defaults_visibility: [
+        "//art:__subpackages__",
+        "//packages/modules:__subpackages__",
+    ],
+}
+
+apex_defaults {
+    name: "t-launched-apex-module",
+    min_sdk_version: "Tiramisu",
+    updatable: true,
+    defaults_visibility: ["//packages/modules:__subpackages__"],
+}
