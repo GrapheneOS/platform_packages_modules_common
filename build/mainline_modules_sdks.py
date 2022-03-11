@@ -463,6 +463,11 @@ class MainlineModule:
 # List of mainline modules.
 MAINLINE_MODULES = [
     MainlineModule(
+        apex="com.android.adservices",
+        sdks=["adservices-module-sdk"],
+        first_release=Tiramisu,
+    ),
+    MainlineModule(
         apex="com.android.art",
         sdks=[
             "art-module-sdk",
