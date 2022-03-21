@@ -584,16 +584,6 @@ class SdkDistProducer:
                                               modules)
         self.populate_dist(build_release, sdk_versions, modules)
 
-    def unzip_current_stubs(self, sdk_name, apex_name):
-        """Unzips stubs for "current" into {producer.dist_dir}/stubs/{apex}."""
-        sdk_path = self.snapshot_builder.get_sdk_path(sdk_name, "current")
-        dest_dir = os.path.join(self.dist_dir, "stubs", apex_name)
-        print(
-            f"Extracting java_sdk_library files from {sdk_path} to {dest_dir}")
-        os.makedirs(dest_dir, exist_ok=True)
-        extract_matching_files_from_zip(
-            sdk_path, dest_dir, r"sdk_library/[^/]+/[^/]+\.(txt|jar|srcjar)")
-
     def populate_stubs(self, modules):
         # TODO(b/199759953): Remove stubs once it is no longer used by gantry.
         # Clear and populate the stubs directory.
@@ -602,11 +592,15 @@ class SdkDistProducer:
 
         for module in modules:
             apex = module.apex
+            dest_dir = os.path.join(self.dist_dir, "stubs", apex)
             for sdk in module.sdks:
                 # If the sdk's name ends with -sdk then extract sdk library
                 # related files from its zip file.
                 if sdk.endswith("-sdk"):
-                    self.unzip_current_stubs(sdk, apex)
+                    sdk_file = self.snapshot_builder.get_sdk_path(
+                        sdk, "current")
+                    extract_matching_files_from_zip(sdk_file, dest_dir,
+                                                    sdk_library_files_pattern())
 
     def populate_dist(self, build_release, sdk_versions, modules):
         build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
@@ -675,15 +669,22 @@ def print_command(env, cmd):
     print(" ".join([f"{name}={value}" for name, value in env.items()] + cmd))
 
 
+def sdk_library_files_pattern(*, scope_pattern=r"[^/]+", name_pattern=r"[^/]+"):
+    """Return a pattern to match sdk_library related files in an sdk snapshot"""
+    return rf"sdk_library/{scope_pattern}/{name_pattern}\.(txt|jar|srcjar)"
+
+
 def extract_matching_files_from_zip(zip_path, dest_dir, pattern):
     """Extracts files from a zip file into a destination directory.
 
     The extracted files are those that match the specified regular expression
     pattern.
     """
+    os.makedirs(dest_dir, exist_ok=True)
     with zipfile.ZipFile(zip_path) as zip_file:
         for filename in zip_file.namelist():
             if re.match(pattern, filename):
+                print(f"    extracting {filename}")
                 zip_file.extract(filename, dest_dir)
 
 
