@@ -18,7 +18,7 @@
 If the environment variable TARGET_BUILD_APPS is nonempty then only the SDKs for
 the APEXes in it are built, otherwise all configured SDKs are built.
 """
-
+import argparse
 import dataclasses
 import io
 import os
@@ -761,16 +761,34 @@ def filter_modules(modules):
     return modules
 
 
-def main():
+def main(args):
     """Program entry point."""
     if not os.path.exists("build/make/core/Makefile"):
         sys.exit("This script must be run from the top of the tree.")
 
+    args_parser = argparse.ArgumentParser(
+        description="Build snapshot zips for consumption by Gantry.")
+    args_parser.add_argument(
+        "--build-release",
+        action="append",
+        choices=[br.name for br in ALL_BUILD_RELEASES],
+        help="A target build for which snapshots are required.",
+    )
+    args = args_parser.parse_args(args)
+
+    build_releases = ALL_BUILD_RELEASES
+    if args.build_release:
+        selected_build_releases = {b.lower() for b in args.build_release}
+        build_releases = [
+            b for b in build_releases
+            if b.name.lower() in selected_build_releases
+        ]
+
     producer = create_producer()
     modules = filter_modules(MAINLINE_MODULES)
 
-    producer.produce_dist(modules, ALL_BUILD_RELEASES)
+    producer.produce_dist(modules, build_releases)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
