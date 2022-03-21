@@ -740,6 +740,18 @@ def create_producer():
     )
 
 
+def aosp_to_google(module):
+    """Transform an AOSP module into a Google module"""
+    new_apex = aosp_to_google_name(module.apex)
+    # Create a copy of the AOSP module with the internal specific APEX name.
+    return dataclasses.replace(module, apex=new_apex)
+
+
+def aosp_to_google_name(name):
+    """Transform an AOSP module name into a Google module name"""
+    return name.replace("com.android.", "com.google.android.")
+
+
 def filter_modules(modules):
     target_build_apps = os.environ.get("TARGET_BUILD_APPS")
     if target_build_apps:
