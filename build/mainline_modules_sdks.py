@@ -73,7 +73,7 @@ class SoongConfigBoilerplateInserter(FileTransformation):
     configModuleTypePrefix: str
 
     def apply(self, producer, path):
-        with open(path, "r+") as file:
+        with open(path, "r+", encoding="utf8") as file:
             self._apply_transformation(producer, file)
 
     def _apply_transformation(self, producer, file):
@@ -246,12 +246,13 @@ class SnapshotBuilder:
             # This MUST be identical to the TARGET_BUILD_VARIANT used to build
             # the corresponding APEXes otherwise it could result in different
             # hidden API flags, see http://b/202398851#comment29 for more info.
-            targetBuildVariant = os.environ.get("TARGET_BUILD_VARIANT", "user")
+            target_build_variant = os.environ.get("TARGET_BUILD_VARIANT",
+                                                  "user")
             cmd = [
                 "build/soong/soong_ui.bash",
                 "--make-mode",
                 "--soong-only",
-                f"TARGET_BUILD_VARIANT={targetBuildVariant}",
+                f"TARGET_BUILD_VARIANT={target_build_variant}",
                 "TARGET_PRODUCT=mainline_sdk",
                 "MODULE_BUILD_FROM_SOURCE=true",
                 "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
@@ -335,20 +336,17 @@ class BuildRelease:
         return self.ordinal <= other.ordinal
 
 
-def create_no_dist_snapshot(build_release: BuildRelease,
-                            producer: "SdkDistProducer",
+def create_no_dist_snapshot(_: BuildRelease, __: "SdkDistProducer",
                             modules: List["MainlineModule"]):
     """A place holder dist snapshot creation function that does nothing."""
     print(f"create_no_dist_snapshot for modules {[m.apex for m in modules]}")
-    return
 
 
-def create_sdk_snapshots_in_Soong(build_release: BuildRelease,
+def create_sdk_snapshots_in_soong(build_release: BuildRelease,
                                   producer: "SdkDistProducer",
                                   modules: List["MainlineModule"]):
     """Builds sdks and populates the dist."""
     producer.produce_dist_for_build_release(build_release, modules)
-    return
 
 
 def reuse_latest_sdk_snapshots(build_release: BuildRelease,
@@ -356,7 +354,6 @@ def reuse_latest_sdk_snapshots(build_release: BuildRelease,
                                modules: List["MainlineModule"]):
     """Copies the snapshots from the latest build."""
     producer.populate_dist(build_release, build_release.sdk_versions, modules)
-    return
 
 
 Q = BuildRelease(
@@ -372,12 +369,12 @@ R = BuildRelease(
 S = BuildRelease(
     name="S",
     # Generate a snapshot for S using Soong.
-    creator=create_sdk_snapshots_in_Soong,
+    creator=create_sdk_snapshots_in_soong,
 )
 Tiramisu = BuildRelease(
     name="Tiramisu",
     # Generate a snapshot for Tiramisu using Soong.
-    creator=create_sdk_snapshots_in_Soong,
+    creator=create_sdk_snapshots_in_soong,
 )
 
 # Insert additional BuildRelease definitions for following releases here,
@@ -388,7 +385,7 @@ Tiramisu = BuildRelease(
 # before LEGACY_BUILD_RELEASE.
 LATEST = BuildRelease(
     name="latest",
-    creator=create_sdk_snapshots_in_Soong,
+    creator=create_sdk_snapshots_in_soong,
     # There are no build release specific environment variables to pass to
     # Soong.
     soong_env={},
@@ -748,8 +745,8 @@ def filter_modules(modules):
     if target_build_apps:
         target_build_apps = target_build_apps.split()
         return [m for m in modules if m.apex in target_build_apps]
-    else:
-        return modules
+
+    return modules
 
 
 def main():
