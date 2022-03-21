@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for mainline_modules_sdks.py."""
-import dataclasses
 from pathlib import Path
 import os
 import tempfile
 import unittest
 import zipfile
+from unittest import mock
 
 import mainline_modules_sdks as mm
 
@@ -127,7 +127,7 @@ class TestProduceDist(unittest.TestCase):
                 sorted(files))
 
 
-def pathToTestData(relative_path):
+def path_to_test_data(relative_path):
     """Construct a path to a test data file.
 
     The relative_path is relative to the location of this file.
@@ -147,8 +147,8 @@ def pathToTestData(relative_path):
     return os.path.join(this_file_without_ext + "_data", relative_path)
 
 
-def readTestData(relative_path):
-    with open(pathToTestData(relative_path), "r") as f:
+def read_test_data(relative_path):
+    with open(path_to_test_data(relative_path), "r", encoding="utf8") as f:
         return f.read()
 
 
@@ -156,19 +156,19 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
     def apply_transformations(self, src, transformations, expected):
         producer = mm.SdkDistProducer(
-            subprocess_runner=None,
-            snapshot_builder=None,
+            subprocess_runner=mock.Mock(mm.SubprocessRunner),
+            snapshot_builder=mock.Mock(mm.SnapshotBuilder),
             script=self._testMethodName,
         )
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = os.path.join(tmp_dir, "Android.bp")
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf8") as f:
                 f.write(src)
 
             mm.apply_transformations(producer, tmp_dir, transformations)
 
-            with open(path, "r") as f:
+            with open(path, "r", encoding="utf8") as f:
                 result = f.read()
 
         self.maxDiff = None
@@ -181,9 +181,9 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
         that the correct Soong config module types and variables are used and
         that it imports the definitions from the correct location.
         """
-        src = readTestData("ipsec_Android.bp.input")
+        src = read_test_data("ipsec_Android.bp.input")
 
-        expected = readTestData("ipsec_Android.bp.expected")
+        expected = read_test_data("ipsec_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
         transformations = module.transformations()
@@ -197,9 +197,9 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
         common mainline modules. This checks that the ART specific Soong config
         module types, variable and imports are used.
         """
-        src = readTestData("art_Android.bp.input")
+        src = read_test_data("art_Android.bp.input")
 
-        expected = readTestData("art_Android.bp.expected")
+        expected = read_test_data("art_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.art"]
         transformations = module.transformations()
