@@ -18,7 +18,7 @@
 If the environment variable TARGET_BUILD_APPS is nonempty then only the SDKs for
 the APEXes in it are built, otherwise all configured SDKs are built.
 """
-
+import argparse
 import dataclasses
 import io
 import os
@@ -73,7 +73,7 @@ class SoongConfigBoilerplateInserter(FileTransformation):
     configModuleTypePrefix: str
 
     def apply(self, producer, path):
-        with open(path, "r+") as file:
+        with open(path, "r+", encoding="utf8") as file:
             self._apply_transformation(producer, file)
 
     def _apply_transformation(self, producer, file):
@@ -246,12 +246,13 @@ class SnapshotBuilder:
             # This MUST be identical to the TARGET_BUILD_VARIANT used to build
             # the corresponding APEXes otherwise it could result in different
             # hidden API flags, see http://b/202398851#comment29 for more info.
-            targetBuildVariant = os.environ.get("TARGET_BUILD_VARIANT", "user")
+            target_build_variant = os.environ.get("TARGET_BUILD_VARIANT",
+                                                  "user")
             cmd = [
                 "build/soong/soong_ui.bash",
                 "--make-mode",
                 "--soong-only",
-                f"TARGET_BUILD_VARIANT={targetBuildVariant}",
+                f"TARGET_BUILD_VARIANT={target_build_variant}",
                 "TARGET_PRODUCT=mainline_sdk",
                 "MODULE_BUILD_FROM_SOURCE=true",
                 "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
@@ -335,20 +336,17 @@ class BuildRelease:
         return self.ordinal <= other.ordinal
 
 
-def create_no_dist_snapshot(build_release: BuildRelease,
-                            producer: "SdkDistProducer",
+def create_no_dist_snapshot(_: BuildRelease, __: "SdkDistProducer",
                             modules: List["MainlineModule"]):
     """A place holder dist snapshot creation function that does nothing."""
     print(f"create_no_dist_snapshot for modules {[m.apex for m in modules]}")
-    return
 
 
-def create_sdk_snapshots_in_Soong(build_release: BuildRelease,
+def create_sdk_snapshots_in_soong(build_release: BuildRelease,
                                   producer: "SdkDistProducer",
                                   modules: List["MainlineModule"]):
     """Builds sdks and populates the dist."""
     producer.produce_dist_for_build_release(build_release, modules)
-    return
 
 
 def reuse_latest_sdk_snapshots(build_release: BuildRelease,
@@ -356,7 +354,6 @@ def reuse_latest_sdk_snapshots(build_release: BuildRelease,
                                modules: List["MainlineModule"]):
     """Copies the snapshots from the latest build."""
     producer.populate_dist(build_release, build_release.sdk_versions, modules)
-    return
 
 
 Q = BuildRelease(
@@ -372,12 +369,12 @@ R = BuildRelease(
 S = BuildRelease(
     name="S",
     # Generate a snapshot for S using Soong.
-    creator=create_sdk_snapshots_in_Soong,
+    creator=create_sdk_snapshots_in_soong,
 )
 Tiramisu = BuildRelease(
     name="Tiramisu",
     # Generate a snapshot for Tiramisu using Soong.
-    creator=create_sdk_snapshots_in_Soong,
+    creator=create_sdk_snapshots_in_soong,
 )
 
 # Insert additional BuildRelease definitions for following releases here,
@@ -388,7 +385,7 @@ Tiramisu = BuildRelease(
 # before LEGACY_BUILD_RELEASE.
 LATEST = BuildRelease(
     name="latest",
-    creator=create_sdk_snapshots_in_Soong,
+    creator=create_sdk_snapshots_in_soong,
     # There are no build release specific environment variables to pass to
     # Soong.
     soong_env={},
@@ -605,16 +602,6 @@ class SdkDistProducer:
                                               modules)
         self.populate_dist(build_release, sdk_versions, modules)
 
-    def unzip_current_stubs(self, sdk_name, apex_name):
-        """Unzips stubs for "current" into {producer.dist_dir}/stubs/{apex}."""
-        sdk_path = self.snapshot_builder.get_sdk_path(sdk_name, "current")
-        dest_dir = os.path.join(self.dist_dir, "stubs", apex_name)
-        print(
-            f"Extracting java_sdk_library files from {sdk_path} to {dest_dir}")
-        os.makedirs(dest_dir, exist_ok=True)
-        extract_matching_files_from_zip(
-            sdk_path, dest_dir, r"sdk_library/[^/]+/[^/]+\.(txt|jar|srcjar)")
-
     def populate_stubs(self, modules):
         # TODO(b/199759953): Remove stubs once it is no longer used by gantry.
         # Clear and populate the stubs directory.
@@ -623,11 +610,15 @@ class SdkDistProducer:
 
         for module in modules:
             apex = module.apex
+            dest_dir = os.path.join(self.dist_dir, "stubs", apex)
             for sdk in module.sdks:
                 # If the sdk's name ends with -sdk then extract sdk library
                 # related files from its zip file.
                 if sdk.endswith("-sdk"):
-                    self.unzip_current_stubs(sdk, apex)
+                    sdk_file = self.snapshot_builder.get_sdk_path(
+                        sdk, "current")
+                    extract_matching_files_from_zip(sdk_file, dest_dir,
+                                                    sdk_library_files_pattern())
 
     def populate_dist(self, build_release, sdk_versions, modules):
         build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
@@ -696,15 +687,22 @@ def print_command(env, cmd):
     print(" ".join([f"{name}={value}" for name, value in env.items()] + cmd))
 
 
+def sdk_library_files_pattern(*, scope_pattern=r"[^/]+", name_pattern=r"[^/]+"):
+    """Return a pattern to match sdk_library related files in an sdk snapshot"""
+    return rf"sdk_library/{scope_pattern}/{name_pattern}\.(txt|jar|srcjar)"
+
+
 def extract_matching_files_from_zip(zip_path, dest_dir, pattern):
     """Extracts files from a zip file into a destination directory.
 
     The extracted files are those that match the specified regular expression
     pattern.
     """
+    os.makedirs(dest_dir, exist_ok=True)
     with zipfile.ZipFile(zip_path) as zip_file:
         for filename in zip_file.namelist():
             if re.match(pattern, filename):
+                print(f"    extracting {filename}")
                 zip_file.extract(filename, dest_dir)
 
 
@@ -757,25 +755,55 @@ def create_producer():
     )
 
 
+def aosp_to_google(module):
+    """Transform an AOSP module into a Google module"""
+    new_apex = aosp_to_google_name(module.apex)
+    # Create a copy of the AOSP module with the internal specific APEX name.
+    return dataclasses.replace(module, apex=new_apex)
+
+
+def aosp_to_google_name(name):
+    """Transform an AOSP module name into a Google module name"""
+    return name.replace("com.android.", "com.google.android.")
+
+
 def filter_modules(modules):
     target_build_apps = os.environ.get("TARGET_BUILD_APPS")
     if target_build_apps:
         target_build_apps = target_build_apps.split()
         return [m for m in modules if m.apex in target_build_apps]
-    else:
-        return modules
+
+    return modules
 
 
-def main():
+def main(args):
     """Program entry point."""
     if not os.path.exists("build/make/core/Makefile"):
         sys.exit("This script must be run from the top of the tree.")
 
+    args_parser = argparse.ArgumentParser(
+        description="Build snapshot zips for consumption by Gantry.")
+    args_parser.add_argument(
+        "--build-release",
+        action="append",
+        choices=[br.name for br in ALL_BUILD_RELEASES],
+        help="A target build for which snapshots are required.",
+    )
+    args = args_parser.parse_args(args)
+
+    build_releases = ALL_BUILD_RELEASES
+    if args.build_release:
+        selected_build_releases = {b.lower() for b in args.build_release}
+        build_releases = [
+            b for b in build_releases
+            if b.name.lower() in selected_build_releases
+        ]
+
     producer = create_producer()
     modules = filter_modules(MAINLINE_MODULES)
 
-    producer.produce_dist(modules, ALL_BUILD_RELEASES)
+    producer.produce_dist(modules, build_releases)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
