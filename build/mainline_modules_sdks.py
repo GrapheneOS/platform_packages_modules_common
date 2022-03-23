@@ -197,6 +197,11 @@ class SubprocessRunner:
             *args, check=True, stdout=self.stdout, stderr=self.stderr, **kwargs)
 
 
+def sdk_snapshot_zip_file(snapshots_dir, sdk_name, sdk_version):
+    """Get the path to the sdk snapshot zip file."""
+    return os.path.join(snapshots_dir, f"{sdk_name}-{sdk_version}.zip")
+
+
 @dataclasses.dataclass()
 class SnapshotBuilder:
     """Builds sdk snapshots"""
@@ -207,13 +212,16 @@ class SnapshotBuilder:
     # The OUT_DIR environment variable.
     out_dir: str
 
-    def get_mainline_sdks_path(self):
-        """Get the path to the Soong mainline-sdks directory"""
-        return os.path.join(self.out_dir, "soong/mainline-sdks")
+    # The out/soong/mainline-sdks directory.
+    mainline_sdks_dir: str = ""
+
+    def __post_init__(self):
+        self.mainline_sdks_dir = os.path.join(self.out_dir,
+                                              "soong/mainline-sdks")
 
     def get_sdk_path(self, sdk_name, sdk_version):
         """Get the path to the sdk snapshot zip file produced by soong"""
-        return os.path.join(self.get_mainline_sdks_path(),
+        return os.path.join(self.mainline_sdks_dir,
                             f"{sdk_name}-{sdk_version}.zip")
 
     def build_snapshots(self, build_release, sdk_versions, modules):
@@ -222,7 +230,7 @@ class SnapshotBuilder:
             # Compute the paths to all the Soong generated sdk snapshot files
             # required by this script.
             paths = [
-                self.get_sdk_path(sdk, sdk_version)
+                sdk_snapshot_zip_file(self.mainline_sdks_dir, sdk, sdk_version)
                 for module in modules
                 for sdk in module.sdks
             ]
@@ -261,6 +269,7 @@ class SnapshotBuilder:
             env = os.environ.copy()
             env.update(extraEnv)
             self.subprocess_runner.run(cmd, env=env)
+        return self.mainline_sdks_dir
 
 
 # A list of the sdk versions to build. Usually just current but can include a
@@ -353,7 +362,8 @@ def create_legacy_dist_structures(build_release: BuildRelease,
                                   producer: "SdkDistProducer",
                                   modules: List["MainlineModule"]):
     """Creates legacy file structures."""
-    producer.produce_dist_for_build_release(build_release, modules)
+    snapshots_dir = producer.produce_dist_for_build_release(
+        build_release, modules)
 
     # Create the out/dist/mainline-sdks/stubs structure.
     # TODO(b/199759953): Remove stubs once it is no longer used by gantry.
@@ -369,8 +379,7 @@ def create_legacy_dist_structures(build_release: BuildRelease,
             # If the sdk's name ends with -sdk then extract sdk library
             # related files from its zip file.
             if sdk.endswith("-sdk"):
-                sdk_file = producer.snapshot_builder.get_sdk_path(
-                    sdk, "current")
+                sdk_file = sdk_snapshot_zip_file(snapshots_dir, sdk, "current")
                 extract_matching_files_from_zip(sdk_file, dest_dir,
                                                 sdk_library_files_pattern())
 
@@ -614,11 +623,13 @@ class SdkDistProducer:
 
     def produce_dist_for_build_release(self, build_release, modules):
         sdk_versions = build_release.sdk_versions
-        self.snapshot_builder.build_snapshots(build_release, sdk_versions,
-                                              modules)
-        self.populate_dist(build_release, sdk_versions, modules)
+        snapshots_dir = self.snapshot_builder.build_snapshots(
+            build_release, sdk_versions, modules)
+        self.populate_dist(build_release, sdk_versions, modules, snapshots_dir)
+        return snapshots_dir
 
-    def populate_dist(self, build_release, sdk_versions, modules):
+    def populate_dist(self, build_release, sdk_versions, modules,
+                      snapshots_dir):
         build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
                                               build_release.sub_dir)
 
@@ -636,8 +647,8 @@ class SdkDistProducer:
 
                     sdk_dist_dir = os.path.join(build_release_dist_dir,
                                                 sdk_version, apex, subdir)
-                    sdk_path = self.snapshot_builder.get_sdk_path(
-                        sdk, sdk_version)
+                    sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk,
+                                                     sdk_version)
                     self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_dir,
                                                module.transformations())
 

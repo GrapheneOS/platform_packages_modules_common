@@ -41,8 +41,8 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         z.writestr(f"sdk_library/public/{name}-stubs.jar", "")
         z.writestr(f"sdk_library/public/{name}.txt", "")
 
-    def create_snapshot_file(self, name, version):
-        zip_file = Path(self.get_sdk_path(name, version))
+    def create_snapshot_file(self, out_dir, name, version):
+        zip_file = Path(mm.sdk_snapshot_zip_file(out_dir, name, version))
         with zipfile.ZipFile(zip_file, "w") as z:
             z.writestr("Android.bp", "")
             if name.endswith("-sdk"):
@@ -50,13 +50,14 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
 
     def build_snapshots(self, build_release, sdk_versions, modules):
         # Create input file structure.
-        sdks_out_dir = Path(self.get_mainline_sdks_path())
+        sdks_out_dir = Path(self.mainline_sdks_dir).joinpath("test")
         sdks_out_dir.mkdir(parents=True, exist_ok=True)
         # Create a fake sdk zip file for each module.
         for module in modules:
             for sdk in module.sdks:
                 for sdk_version in sdk_versions:
-                    self.create_snapshot_file(sdk, sdk_version)
+                    self.create_snapshot_file(sdks_out_dir, sdk, sdk_version)
+        return sdks_out_dir
 
 
 class TestProduceDist(unittest.TestCase):
