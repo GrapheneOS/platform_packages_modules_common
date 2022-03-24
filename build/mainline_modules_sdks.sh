@@ -56,7 +56,11 @@ function main() {
   # provided by the build to ensure consistency across build environments.
   export DIST_DIR OUT_DIR
 
-  prebuilts/build-tools/linux-x86/bin/py3-cmd -u "${py3script}" "$@"
+  # The path to this tool is the .sh script that lives alongside the .py script.
+  TOOL_PATH="${py3script%.py}.sh"
+  prebuilts/build-tools/linux-x86/bin/py3-cmd -u "${py3script}" \
+      --tool-path "${TOOL_PATH}" \
+      "$@"
 }
 
 init "$@"
