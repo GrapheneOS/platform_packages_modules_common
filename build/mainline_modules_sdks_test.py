@@ -41,12 +41,16 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         z.writestr(f"sdk_library/public/{name}-stubs.jar", "")
         z.writestr(f"sdk_library/public/{name}.txt", "")
 
-    def create_snapshot_file(self, out_dir, name, version):
+    def create_snapshot_file(self, out_dir, name, version, for_r_build):
         zip_file = Path(mm.sdk_snapshot_zip_file(out_dir, name, version))
         with zipfile.ZipFile(zip_file, "w") as z:
             z.writestr("Android.bp", "")
             if name.endswith("-sdk"):
-                self.create_sdk_library_files(z, re.sub(r"-.*$", "", name))
+                if for_r_build:
+                    for library in for_r_build.sdk_libraries:
+                        self.create_sdk_library_files(z, library.name)
+                else:
+                    self.create_sdk_library_files(z, re.sub(r"-.*$", "", name))
 
     def build_snapshots(self, build_release, sdk_versions, modules):
         # Create input file structure.
@@ -56,7 +60,8 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         for module in modules:
             for sdk in module.sdks:
                 for sdk_version in sdk_versions:
-                    self.create_snapshot_file(sdks_out_dir, sdk, sdk_version)
+                    self.create_snapshot_file(sdks_out_dir, sdk, sdk_version,
+                                              module.for_r_build)
         return sdks_out_dir
 
 
@@ -80,6 +85,7 @@ class TestProduceDist(unittest.TestCase):
             subprocess_runner = mm.SubprocessRunner()
 
             snapshot_builder = FakeSnapshotBuilder(
+                tool_path="path/to/mainline_modules_sdks.sh",
                 subprocess_runner=subprocess_runner,
                 out_dir=tmp_out_dir,
             )
@@ -100,11 +106,6 @@ class TestProduceDist(unittest.TestCase):
 
             producer.produce_dist(modules, build_releases)
 
-            files = []
-            for abs_dir, _, filenames in os.walk(tmp_dist_dir):
-                rel_dir = os.path.relpath(abs_dir, tmp_dist_dir)
-                for f in filenames:
-                    files.append(os.path.join(rel_dir, f))
             # pylint: disable=line-too-long
             self.assertEqual(
                 [
@@ -115,6 +116,8 @@ class TestProduceDist(unittest.TestCase):
                     "mainline-sdks/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
                     "mainline-sdks/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
                     # Build specific snapshots.
+                    "mainline-sdks/for-R-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                    "mainline-sdks/for-R-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
                     "mainline-sdks/for-S-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
                     "mainline-sdks/for-S-build/current/com.android.art/sdk/art-module-sdk-current.zip",
                     "mainline-sdks/for-S-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
@@ -130,16 +133,60 @@ class TestProduceDist(unittest.TestCase):
                     "stubs/com.android.art/sdk_library/public/art-stubs.jar",
                     "stubs/com.android.art/sdk_library/public/art.srcjar",
                     "stubs/com.android.art/sdk_library/public/art.txt",
-                    "stubs/com.android.ipsec/sdk_library/public/ipsec-removed.txt",
-                    "stubs/com.android.ipsec/sdk_library/public/ipsec-stubs.jar",
-                    "stubs/com.android.ipsec/sdk_library/public/ipsec.srcjar",
-                    "stubs/com.android.ipsec/sdk_library/public/ipsec.txt",
-                    "stubs/com.google.android.wifi/sdk_library/public/wifi-removed.txt",
-                    "stubs/com.google.android.wifi/sdk_library/public/wifi-stubs.jar",
-                    "stubs/com.google.android.wifi/sdk_library/public/wifi.srcjar",
-                    "stubs/com.google.android.wifi/sdk_library/public/wifi.txt",
+                    "stubs/com.android.ipsec/sdk_library/public/android.net.ipsec.ike-removed.txt",
+                    "stubs/com.android.ipsec/sdk_library/public/android.net.ipsec.ike-stubs.jar",
+                    "stubs/com.android.ipsec/sdk_library/public/android.net.ipsec.ike.srcjar",
+                    "stubs/com.android.ipsec/sdk_library/public/android.net.ipsec.ike.txt",
+                    "stubs/com.google.android.wifi/sdk_library/public/framework-wifi-removed.txt",
+                    "stubs/com.google.android.wifi/sdk_library/public/framework-wifi-stubs.jar",
+                    "stubs/com.google.android.wifi/sdk_library/public/framework-wifi.srcjar",
+                    "stubs/com.google.android.wifi/sdk_library/public/framework-wifi.txt",
                 ],
-                sorted(files))
+                sorted(self.list_files_in_dir(tmp_dist_dir)))
+
+            r_snaphot_dir = os.path.join(
+                tmp_out_dir, "soong/mainline-sdks/test/for-R-build")
+            aosp_ipsec_r_bp_file = "com.android.ipsec/Android.bp"
+            google_wifi_android_bp = "com.google.android.wifi/Android.bp"
+            self.assertEqual([
+                aosp_ipsec_r_bp_file,
+                "com.android.ipsec/sdk_library/public/android.net.ipsec.ike-removed.txt",
+                "com.android.ipsec/sdk_library/public/android.net.ipsec.ike-stubs.jar",
+                "com.android.ipsec/sdk_library/public/android.net.ipsec.ike.srcjar",
+                "com.android.ipsec/sdk_library/public/android.net.ipsec.ike.txt",
+                google_wifi_android_bp,
+                "com.google.android.wifi/sdk_library/public/framework-wifi-removed.txt",
+                "com.google.android.wifi/sdk_library/public/framework-wifi-stubs.jar",
+                "com.google.android.wifi/sdk_library/public/framework-wifi.srcjar",
+                "com.google.android.wifi/sdk_library/public/framework-wifi.txt",
+                "ipsec-module-sdk-current.zip",
+                "wifi-module-sdk-current.zip",
+            ], sorted(self.list_files_in_dir(r_snaphot_dir)))
+
+            def read_r_snapshot_contents(path):
+                abs_path = os.path.join(r_snaphot_dir, path)
+                with open(abs_path, "r", encoding="utf8") as file:
+                    return file.read()
+
+            # Check the contents of the AOSP ipsec module
+            ipsec_contents = read_r_snapshot_contents(aosp_ipsec_r_bp_file)
+            expected = read_test_data("ipsec_for_r_Android.bp")
+            self.assertEqual(expected, ipsec_contents)
+
+            # Check the contents of the Google ipsec module
+            wifi_contents = read_r_snapshot_contents(google_wifi_android_bp)
+            expected = read_test_data("google_wifi_for_r_Android.bp")
+            self.assertEqual(expected, wifi_contents)
+
+    def list_files_in_dir(self, tmp_dist_dir):
+        files = []
+        for abs_dir, _, filenames in os.walk(tmp_dist_dir):
+            rel_dir = os.path.relpath(abs_dir, tmp_dist_dir)
+            if rel_dir == ".":
+                rel_dir = ""
+            for f in filenames:
+                files.append(os.path.join(rel_dir, f))
+        return files
 
 
 def path_to_test_data(relative_path):
@@ -201,7 +248,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
         expected = read_test_data("ipsec_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
-        transformations = module.transformations()
+        transformations = module.transformations(mm.S)
 
         self.apply_transformations(src, transformations, expected)
 
@@ -217,7 +264,25 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
         expected = read_test_data("art_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.art"]
-        transformations = module.transformations()
+        transformations = module.transformations(mm.S)
+
+        self.apply_transformations(src, transformations, expected)
+
+    def test_r_build(self):
+        """Tests the transformations that are applied for the R build.
+
+        This uses ipsec as an example of a common mainline module. That would
+        usually apply the mm.SoongConfigBoilerplateInserter transformation but
+        because this is being run for build R that transformation should not be
+        applied.
+        """
+        src = read_test_data("ipsec_for_r_Android.bp")
+
+        # There should be no changes made.
+        expected = src
+
+        module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
+        transformations = module.transformations(mm.R)
 
         self.apply_transformations(src, transformations, expected)
 
