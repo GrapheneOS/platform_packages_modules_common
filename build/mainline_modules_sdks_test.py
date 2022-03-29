@@ -160,8 +160,8 @@ class TestProduceDist(unittest.TestCase):
 
         r_snaphot_dir = os.path.join(self.tmp_out_dir,
                                      "soong/mainline-sdks/test/for-R-build")
-        aosp_ipsec_r_bp_file = "com.android.ipsec/Android.bp"
-        google_wifi_android_bp = "com.google.android.wifi/Android.bp"
+        aosp_ipsec_r_bp_file = "com.android.ipsec/sdk_library/Android.bp"
+        google_wifi_android_bp = "com.google.android.wifi/sdk_library/Android.bp"
         self.assertEqual([
             aosp_ipsec_r_bp_file,
             "com.android.ipsec/sdk_library/public/android.net.ipsec.ike-removed.txt",
