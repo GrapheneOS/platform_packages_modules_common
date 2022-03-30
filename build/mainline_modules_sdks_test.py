@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for mainline_modules_sdks.py."""
+import dataclasses
 import re
+import typing
 from pathlib import Path
 import os
 import shutil
@@ -30,12 +32,15 @@ MAINLINE_MODULES_BY_APEX = dict(
                           mm.PLATFORM_SDKS_FOR_MAINLINE))
 
 
+@dataclasses.dataclass()
 class FakeSnapshotBuilder(mm.SnapshotBuilder):
     """A fake snapshot builder that does not run the build.
 
     This skips the whole build process and just creates some fake sdk
     modules.
     """
+
+    snapshots: typing.List[typing.Any] = dataclasses.field(default_factory=list)
 
     @staticmethod
     def create_sdk_library_files(z, name):
@@ -56,6 +61,8 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                     self.create_sdk_library_files(z, re.sub(r"-.*$", "", name))
 
     def build_snapshots(self, build_release, sdk_versions, modules):
+        self.snapshots.append((build_release.name, build_release.soong_env,
+                               sdk_versions, [m.apex for m in modules]))
         # Create input file structure.
         sdks_out_dir = Path(self.mainline_sdks_dir).joinpath("test")
         sdks_out_dir.mkdir(parents=True, exist_ok=True)
@@ -255,6 +262,75 @@ class TestProduceDist(unittest.TestCase):
                 "stubs/com.android.art/sdk_library/public/art.txt",
             ],
             sorted(self.list_files_in_dir(self.tmp_dist_dir)))
+
+    def test_snapshot_build_order(self):
+        subprocess_runner = unittest.mock.Mock(mm.SubprocessRunner)
+        snapshot_builder = FakeSnapshotBuilder(
+            tool_path="path/to/mainline_modules_sdks.sh",
+            subprocess_runner=subprocess_runner,
+            out_dir=self.tmp_out_dir,
+        )
+        producer = mm.SdkDistProducer(
+            subprocess_runner=subprocess_runner,
+            snapshot_builder=snapshot_builder,
+            dist_dir=self.tmp_dist_dir,
+        )
+
+        modules = [
+            MAINLINE_MODULES_BY_APEX["com.android.art"],
+            MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
+            # Create a google specific module.
+            mm.aosp_to_google(MAINLINE_MODULES_BY_APEX["com.android.wifi"]),
+        ]
+        build_releases = [
+            mm.Q,
+            mm.R,
+            mm.S,
+            mm.LATEST,
+            mm.LEGACY_BUILD_RELEASE,
+        ]
+
+        producer.produce_dist(modules, build_releases)
+
+        # Check the order in which the snapshots are built.
+        self.assertEqual([
+            (
+                "R",
+                {},
+                ["current"],
+                ["com.android.ipsec", "com.google.android.wifi"],
+            ),
+            (
+                "S",
+                {
+                    "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": "S"
+                },
+                ["current"],
+                [
+                    "com.android.art", "com.android.ipsec",
+                    "com.google.android.wifi"
+                ],
+            ),
+            (
+                "latest",
+                {},
+                ["current"],
+                [
+                    "com.android.art", "com.android.ipsec",
+                    "com.google.android.wifi"
+                ],
+            ),
+            ('latest', {}, ['current'], []),
+            (
+                "legacy",
+                {},
+                ["current"],
+                [
+                    "com.android.art", "com.android.ipsec",
+                    "com.google.android.wifi"
+                ],
+            ),
+        ], snapshot_builder.snapshots)
 
 
 def path_to_test_data(relative_path):
