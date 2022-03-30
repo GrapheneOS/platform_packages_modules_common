@@ -306,7 +306,13 @@ class SnapshotBuilder:
             apex = module.apex
             dest_dir = os.path.join(r_snapshot_dir, apex)
             os.makedirs(dest_dir, exist_ok=True)
-            bp_file = os.path.join(dest_dir, "Android.bp")
+
+            # Write the bp file in the sdk_library sub-directory rather than the
+            # root of the zip file as it will be unpacked in a directory that
+            # already contains an Android.bp file that defines the corresponding
+            # apex_set.
+            bp_file = os.path.join(dest_dir, "sdk_library/Android.bp")
+            os.makedirs(os.path.dirname(bp_file), exist_ok=True)
 
             # The first sdk in the list is the name to use.
             sdk_name = module.sdks[0]
@@ -338,24 +344,21 @@ java_sdk_library_import {{
         "test_{aosp_apex}",
     ],
     public: {{
-        jars: ["sdk_library/public/{module_name}-stubs.jar"],
-        stub_srcs: ["sdk_library/public/{module_name}.srcjar"],
-        current_api: "sdk_library/public/{module_name}.txt",
-        removed_api: "sdk_library/public/{module_name}-removed.txt",
+        jars: ["public/{module_name}-stubs.jar"],
+        current_api: "public/{module_name}.txt",
+        removed_api: "public/{module_name}-removed.txt",
         sdk_version: "module_current",
     }},
     system: {{
-        jars: ["sdk_library/system/{module_name}-stubs.jar"],
-        stub_srcs: ["sdk_library/system/{module_name}.srcjar"],
-        current_api: "sdk_library/system/{module_name}.txt",
-        removed_api: "sdk_library/system/{module_name}-removed.txt",
+        jars: ["system/{module_name}-stubs.jar"],
+        current_api: "system/{module_name}.txt",
+        removed_api: "system/{module_name}-removed.txt",
         sdk_version: "module_current",
     }},
     module_lib: {{
-        jars: ["sdk_library/module-lib/{module_name}-stubs.jar"],
-        stub_srcs: ["sdk_library/module-lib/{module_name}.srcjar"],
-        current_api: "sdk_library/module-lib/{module_name}.txt",
-        removed_api: "sdk_library/module-lib/{module_name}-removed.txt",
+        jars: ["module-lib/{module_name}-stubs.jar"],
+        current_api: "module-lib/{module_name}.txt",
+        removed_api: "module-lib/{module_name}-removed.txt",
         sdk_version: "module_current",
     }},
 }}
