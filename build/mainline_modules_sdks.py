@@ -28,6 +28,7 @@ import subprocess
 import sys
 import tempfile
 import typing
+from collections import defaultdict
 from typing import Callable, List
 import zipfile
 
@@ -852,7 +853,14 @@ class SdkDistProducer:
         # Prepare the dist directory for the sdks.
         self.prepare()
 
+        # Group build releases so that those with the same Soong environment are
+        # run consecutively to avoid having to regenerate ninja files.
+        grouped_by_env = defaultdict(list)
         for build_release in build_releases:
+            grouped_by_env[str(build_release.soong_env)].append(build_release)
+        ordered = [br for _, group in grouped_by_env.items() for br in group]
+
+        for build_release in ordered:
             # Only build modules that are required for this build release.
             filtered_modules = [
                 m for m in modules if m.is_required_for(build_release)
@@ -887,11 +895,11 @@ class SdkDistProducer:
 
     def produce_bundled_dist_for_build_release(self, build_release, modules):
         modules = [m for m in modules if m.is_bundled()]
-        sdk_versions = build_release.sdk_versions
-        snapshots_dir = self.snapshot_builder.build_snapshots(
-            build_release, sdk_versions, modules)
-        self.populate_bundled_dist(build_release, modules, snapshots_dir)
-        return snapshots_dir
+        if modules:
+            sdk_versions = build_release.sdk_versions
+            snapshots_dir = self.snapshot_builder.build_snapshots(
+                build_release, sdk_versions, modules)
+            self.populate_bundled_dist(build_release, modules, snapshots_dir)
 
     def populate_unbundled_dist(self, build_release, sdk_versions, modules,
                                 snapshots_dir):
