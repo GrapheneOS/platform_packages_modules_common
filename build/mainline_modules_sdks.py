@@ -911,34 +911,31 @@ class SdkDistProducer:
         for module in modules:
             for sdk_version in sdk_versions:
                 for sdk in module.sdks:
-                    sdk_dist_dir = os.path.join(
-                        build_release_dist_dir, sdk_version)
-                    self.populate_dist_snapshot(
-                        build_release, module, sdk, sdk_dist_dir, sdk_version,
-                        snapshots_dir)
+                    sdk_dist_dir = os.path.join(build_release_dist_dir,
+                                                sdk_version)
+                    self.populate_dist_snapshot(build_release, module, sdk,
+                                                sdk_dist_dir, sdk_version,
+                                                snapshots_dir)
 
     def populate_bundled_dist(self, build_release, modules, snapshots_dir):
         sdk_dist_dir = self.bundled_mainline_sdks_dir
         for module in modules:
             for sdk in module.sdks:
-                self.populate_dist_snapshot(
-                    build_release, module, sdk, sdk_dist_dir, "current",
-                    snapshots_dir)
+                self.populate_dist_snapshot(build_release, module, sdk,
+                                            sdk_dist_dir, "current",
+                                            snapshots_dir)
 
     def populate_dist_snapshot(self, build_release, module, sdk, sdk_dist_dir,
                                sdk_version, snapshots_dir):
-        subdir = re.sub("^.+-(sdk|(host|test)-exports)$", r'\1', sdk)
+        subdir = re.sub("^.+-(sdk|(host|test)-exports)$", r"\1", sdk)
         if subdir not in ("sdk", "host-exports", "test-exports"):
-            raise Exception(
-                f"{sdk} is not a valid name, expected it to end"
-                f" with -(sdk|host-exports|test-exports)"
-            )
+            raise Exception(f"{sdk} is not a valid name, expected it to end"
+                            f" with -(sdk|host-exports|test-exports)")
 
         sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, subdir)
         sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk, sdk_version)
         transformations = module.transformations(build_release)
-        self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir,
-                                   transformations)
+        self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir, transformations)
 
     def dist_sdk_snapshot_zip(self, src_sdk_zip, sdk_dist_dir, transformations):
         """Copy the sdk snapshot zip file to a dist directory.

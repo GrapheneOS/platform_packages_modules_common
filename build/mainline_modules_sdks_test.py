@@ -25,10 +25,9 @@ from unittest import mock
 
 import mainline_modules_sdks as mm
 
-MAINLINE_MODULES_BY_APEX = dict((m.apex, m) for m in (
-    mm.MAINLINE_MODULES +
-    mm.BUNDLED_MAINLINE_MODULES +
-    mm.PLATFORM_SDKS_FOR_MAINLINE))
+MAINLINE_MODULES_BY_APEX = dict(
+    (m.apex, m) for m in (mm.MAINLINE_MODULES + mm.BUNDLED_MAINLINE_MODULES +
+                          mm.PLATFORM_SDKS_FOR_MAINLINE))
 
 
 class FakeSnapshotBuilder(mm.SnapshotBuilder):
@@ -159,8 +158,8 @@ class TestProduceDist(unittest.TestCase):
             ],
             sorted(self.list_files_in_dir(self.tmp_dist_dir)))
 
-        r_snaphot_dir = os.path.join(
-            self.tmp_out_dir, "soong/mainline-sdks/test/for-R-build")
+        r_snaphot_dir = os.path.join(self.tmp_out_dir,
+                                     "soong/mainline-sdks/test/for-R-build")
         aosp_ipsec_r_bp_file = "com.android.ipsec/Android.bp"
         google_wifi_android_bp = "com.google.android.wifi/Android.bp"
         self.assertEqual([
@@ -195,27 +194,25 @@ class TestProduceDist(unittest.TestCase):
 
     def test_old_release(self):
         modules = [
-            MAINLINE_MODULES_BY_APEX["com.android.art"], # An unnbundled module
-            MAINLINE_MODULES_BY_APEX["com.android.runtime"], # A bundled module
-            MAINLINE_MODULES_BY_APEX["platform-mainline"], # Platform SDK
+            MAINLINE_MODULES_BY_APEX["com.android.art"],  # An unnbundled module
+            MAINLINE_MODULES_BY_APEX["com.android.runtime"],  # A bundled module
+            MAINLINE_MODULES_BY_APEX["platform-mainline"],  # Platform SDK
         ]
         build_releases = [mm.S]
         self.produce_dist(modules, build_releases)
 
         # pylint: disable=line-too-long
-        self.assertEqual(
-            [
-                "mainline-sdks/for-S-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
-                "mainline-sdks/for-S-build/current/com.android.art/sdk/art-module-sdk-current.zip",
-                "mainline-sdks/for-S-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
-            ],
-            sorted(self.list_files_in_dir(self.tmp_dist_dir)))
+        self.assertEqual([
+            "mainline-sdks/for-S-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
+            "mainline-sdks/for-S-build/current/com.android.art/sdk/art-module-sdk-current.zip",
+            "mainline-sdks/for-S-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
+        ], sorted(self.list_files_in_dir(self.tmp_dist_dir)))
 
     def test_latest_release(self):
         modules = [
-            MAINLINE_MODULES_BY_APEX["com.android.art"], # An unnbundled module
-            MAINLINE_MODULES_BY_APEX["com.android.runtime"], # A bundled module
-            MAINLINE_MODULES_BY_APEX["platform-mainline"], # Platform SDK
+            MAINLINE_MODULES_BY_APEX["com.android.art"],  # An unnbundled module
+            MAINLINE_MODULES_BY_APEX["com.android.runtime"],  # A bundled module
+            MAINLINE_MODULES_BY_APEX["platform-mainline"],  # Platform SDK
         ]
         build_releases = [mm.LATEST]
         self.produce_dist(modules, build_releases)
@@ -237,9 +234,9 @@ class TestProduceDist(unittest.TestCase):
 
     def test_legacy_release(self):
         modules = [
-            MAINLINE_MODULES_BY_APEX["com.android.art"], # An unnbundled module
-            MAINLINE_MODULES_BY_APEX["com.android.runtime"], # A bundled module
-            MAINLINE_MODULES_BY_APEX["platform-mainline"], # Platform SDK
+            MAINLINE_MODULES_BY_APEX["com.android.art"],  # An unnbundled module
+            MAINLINE_MODULES_BY_APEX["com.android.runtime"],  # A bundled module
+            MAINLINE_MODULES_BY_APEX["platform-mainline"],  # Platform SDK
         ]
         build_releases = [mm.LEGACY_BUILD_RELEASE]
         self.produce_dist(modules, build_releases)
