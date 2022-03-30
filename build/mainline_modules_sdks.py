@@ -460,15 +460,27 @@ def create_dist_snapshot_for_r(build_release: BuildRelease,
 def create_sdk_snapshots_in_soong(build_release: BuildRelease,
                                   producer: "SdkDistProducer",
                                   modules: List["MainlineModule"]):
-    """Builds sdks and populates the dist."""
-    producer.produce_dist_for_build_release(build_release, modules)
+    """Builds sdks and populates the dist for unbundled modules."""
+    producer.produce_unbundled_dist_for_build_release(build_release, modules)
+
+
+def create_latest_sdk_snapshots(build_release: BuildRelease,
+                                producer: "SdkDistProducer",
+                                modules: List["MainlineModule"]):
+    """Builds and populates the latest release, including bundled modules."""
+    producer.produce_unbundled_dist_for_build_release(build_release, modules)
+    producer.produce_bundled_dist_for_build_release(build_release, modules)
 
 
 def create_legacy_dist_structures(build_release: BuildRelease,
                                   producer: "SdkDistProducer",
                                   modules: List["MainlineModule"]):
     """Creates legacy file structures."""
-    snapshots_dir = producer.produce_dist_for_build_release(
+
+    # Only put unbundled modules in the legacy dist and stubs structures.
+    modules = [m for m in modules if not m.is_bundled()]
+
+    snapshots_dir = producer.produce_unbundled_dist_for_build_release(
         build_release, modules)
 
     # Create the out/dist/mainline-sdks/stubs structure.
@@ -525,7 +537,7 @@ Tiramisu = BuildRelease(
 # before LEGACY_BUILD_RELEASE.
 LATEST = BuildRelease(
     name="latest",
-    creator=create_sdk_snapshots_in_soong,
+    creator=create_latest_sdk_snapshots,
     # There are no build release specific environment variables to pass to
     # Soong.
     soong_env={},
@@ -568,7 +580,11 @@ class ForRBuild:
 
 @dataclasses.dataclass(frozen=True)
 class MainlineModule:
-    """Represents a mainline module"""
+    """Represents an unbundled mainline module.
+
+    This is a module that is distributed as a prebuilt and intended to be
+    updated with Mainline trains.
+    """
     # The name of the apex.
     apex: str
 
@@ -603,6 +619,10 @@ class MainlineModule:
 
     for_r_build: typing.Optional[ForRBuild] = None
 
+    def is_bundled(self):
+        """Returns true for bundled modules. See BundledMainlineModule."""
+        return False
+
     def transformations(self, build_release):
         """Returns the transformations to apply to this module's snapshot(s)."""
         transformations = []
@@ -618,6 +638,23 @@ class MainlineModule:
     def is_required_for(self, target_build_release):
         """True if this module is required for the target build release."""
         return self.first_release <= target_build_release
+
+
+@dataclasses.dataclass(frozen=True)
+class BundledMainlineModule(MainlineModule):
+    """Represents a bundled Mainline module or a platform SDK for module use.
+
+    A bundled module is always preloaded into the platform images.
+    """
+
+    def is_bundled(self):
+        return True
+
+    def transformations(self, build_release):
+        # Bundled modules are only used on thin branches where the corresponding
+        # sources are absent, so skip transformations and keep the default
+        # `prefer: false`.
+        return []
 
 
 # List of mainline modules.
@@ -741,6 +778,42 @@ MAINLINE_MODULES = [
     ),
 ]
 
+# List of Mainline modules that currently are never built unbundled. They should
+# not specify first_release, and they don't have com.google.android
+# counterparts.
+BUNDLED_MAINLINE_MODULES = [
+    BundledMainlineModule(
+        apex="com.android.i18n",
+        sdks=[
+            "i18n-module-sdk",
+            "i18n-module-test-exports",
+            "i18n-module-host-exports",
+        ],
+    ),
+    BundledMainlineModule(
+        apex="com.android.runtime",
+        sdks=[
+            "runtime-module-host-exports",
+            "runtime-module-sdk",
+        ],
+    ),
+    BundledMainlineModule(
+        apex="com.android.tzdata",
+        sdks=["tzdata-module-test-exports"],
+    ),
+]
+
+# List of platform SDKs for Mainline module use.
+PLATFORM_SDKS_FOR_MAINLINE = [
+    BundledMainlineModule(
+        apex="platform-mainline",
+        sdks=[
+            "platform-mainline-sdk",
+            "platform-mainline-test-exports",
+        ],
+    ),
+]
+
 
 @dataclasses.dataclass
 class SdkDistProducer:
@@ -765,17 +838,26 @@ class SdkDistProducer:
     # transformed to document where the changes came from.
     script: str = sys.argv[0]
 
-    # The path to the mainline-sdks dist directory.
+    # The path to the mainline-sdks dist directory for unbundled modules.
     #
     # Initialized in __post_init__().
     mainline_sdks_dir: str = dataclasses.field(init=False)
 
+    # The path to the mainline-sdks dist directory for bundled modules and
+    # platform SDKs.
+    #
+    # Initialized in __post_init__().
+    bundled_mainline_sdks_dir: str = dataclasses.field(init=False)
+
     def __post_init__(self):
         self.mainline_sdks_dir = os.path.join(self.dist_dir, "mainline-sdks")
+        self.bundled_mainline_sdks_dir = os.path.join(self.dist_dir,
+                                                      "bundled-mainline-sdks")
 
     def prepare(self):
-        # Clear the mainline-sdks dist directory.
+        # Clear the sdk dist directories.
         shutil.rmtree(self.mainline_sdks_dir, ignore_errors=True)
+        shutil.rmtree(self.bundled_mainline_sdks_dir, ignore_errors=True)
 
     def produce_dist(self, modules, build_releases):
         # Prepare the dist directory for the sdks.
@@ -802,39 +884,61 @@ class SdkDistProducer:
 
         snapshot_dir = self.snapshot_builder.build_snapshots_for_build_r(
             build_release, sdk_versions, modules)
-        self.populate_dist(build_release, sdk_versions, modules, snapshot_dir)
+        self.populate_unbundled_dist(build_release, sdk_versions, modules,
+                                     snapshot_dir)
 
-    def produce_dist_for_build_release(self, build_release, modules):
+    def produce_unbundled_dist_for_build_release(self, build_release, modules):
+        modules = [m for m in modules if not m.is_bundled()]
         sdk_versions = build_release.sdk_versions
         snapshots_dir = self.snapshot_builder.build_snapshots(
             build_release, sdk_versions, modules)
-        self.populate_dist(build_release, sdk_versions, modules, snapshots_dir)
+        self.populate_unbundled_dist(build_release, sdk_versions, modules,
+                                     snapshots_dir)
         return snapshots_dir
 
-    def populate_dist(self, build_release, sdk_versions, modules,
-                      snapshots_dir):
+    def produce_bundled_dist_for_build_release(self, build_release, modules):
+        modules = [m for m in modules if m.is_bundled()]
+        sdk_versions = build_release.sdk_versions
+        snapshots_dir = self.snapshot_builder.build_snapshots(
+            build_release, sdk_versions, modules)
+        self.populate_bundled_dist(build_release, modules, snapshots_dir)
+        return snapshots_dir
+
+    def populate_unbundled_dist(self, build_release, sdk_versions, modules,
+                                snapshots_dir):
         build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
                                               build_release.sub_dir)
-
         for module in modules:
-            apex = module.apex
             for sdk_version in sdk_versions:
                 for sdk in module.sdks:
-                    subdir = re.sub("^[^-]+-(module-)?", "", sdk)
-                    if subdir not in ("sdk", "host-exports", "test-exports"):
-                        raise Exception(
-                            f"{sdk} is not a valid name, expected name in the"
-                            f" format of"
-                            f" ^[^-]+-(module-)?(sdk|host-exports|test-exports)"
-                        )
+                    sdk_dist_dir = os.path.join(
+                        build_release_dist_dir, sdk_version)
+                    self.populate_dist_snapshot(
+                        build_release, module, sdk, sdk_dist_dir, sdk_version,
+                        snapshots_dir)
 
-                    sdk_dist_dir = os.path.join(build_release_dist_dir,
-                                                sdk_version, apex, subdir)
-                    sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk,
-                                                     sdk_version)
-                    transformations = module.transformations(build_release)
-                    self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_dir,
-                                               transformations)
+    def populate_bundled_dist(self, build_release, modules, snapshots_dir):
+        sdk_dist_dir = self.bundled_mainline_sdks_dir
+        for module in modules:
+            for sdk in module.sdks:
+                self.populate_dist_snapshot(
+                    build_release, module, sdk, sdk_dist_dir, "current",
+                    snapshots_dir)
+
+    def populate_dist_snapshot(self, build_release, module, sdk, sdk_dist_dir,
+                               sdk_version, snapshots_dir):
+        subdir = re.sub("^.+-(sdk|(host|test)-exports)$", r'\1', sdk)
+        if subdir not in ("sdk", "host-exports", "test-exports"):
+            raise Exception(
+                f"{sdk} is not a valid name, expected it to end"
+                f" with -(sdk|host-exports|test-exports)"
+            )
+
+        sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, subdir)
+        sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk, sdk_version)
+        transformations = module.transformations(build_release)
+        self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir,
+                                   transformations)
 
     def dist_sdk_snapshot_zip(self, src_sdk_zip, sdk_dist_dir, transformations):
         """Copy the sdk snapshot zip file to a dist directory.
@@ -970,12 +1074,10 @@ def google_to_aosp_name(name):
     return name.replace("com.google.android.", "com.android.")
 
 
-def filter_modules(modules):
-    target_build_apps = os.environ.get("TARGET_BUILD_APPS")
+def filter_modules(modules, target_build_apps):
     if target_build_apps:
         target_build_apps = target_build_apps.split()
         return [m for m in modules if m.apex in target_build_apps]
-
     return modules
 
 
@@ -995,7 +1097,16 @@ def main(args):
         "--build-release",
         action="append",
         choices=[br.name for br in ALL_BUILD_RELEASES],
-        help="A target build for which snapshots are required.",
+        help="A target build for which snapshots are required. "
+        "If it is \"latest\" then Mainline module SDKs from platform and "
+        "bundled modules are included.",
+    )
+    args_parser.add_argument(
+        "--build-platform-sdks-for-mainline",
+        action="store_true",
+        help="Also build the platform SDKs for Mainline modules. "
+        "Defaults to true when TARGET_BUILD_APPS is not set. "
+        "Applicable only if the \"latest\" build release is built.",
     )
     args = args_parser.parse_args(args)
 
@@ -1007,9 +1118,16 @@ def main(args):
             if b.name.lower() in selected_build_releases
         ]
 
-    producer = create_producer(args.tool_path)
-    modules = filter_modules(MAINLINE_MODULES)
+    target_build_apps = os.environ.get("TARGET_BUILD_APPS")
+    modules = filter_modules(MAINLINE_MODULES + BUNDLED_MAINLINE_MODULES,
+                             target_build_apps)
 
+    # Also build the platform Mainline SDKs either if no specific modules are
+    # requested or if --build-platform-sdks-for-mainline is given.
+    if not target_build_apps or args.build_platform_sdks_for_mainline:
+        modules += PLATFORM_SDKS_FOR_MAINLINE
+
+    producer = create_producer(args.tool_path)
     producer.produce_dist(modules, build_releases)
 
 
