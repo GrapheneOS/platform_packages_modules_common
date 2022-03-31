@@ -28,6 +28,7 @@ import subprocess
 import sys
 import tempfile
 import typing
+from collections import defaultdict
 from typing import Callable, List
 import zipfile
 
@@ -306,7 +307,13 @@ class SnapshotBuilder:
             apex = module.apex
             dest_dir = os.path.join(r_snapshot_dir, apex)
             os.makedirs(dest_dir, exist_ok=True)
-            bp_file = os.path.join(dest_dir, "Android.bp")
+
+            # Write the bp file in the sdk_library sub-directory rather than the
+            # root of the zip file as it will be unpacked in a directory that
+            # already contains an Android.bp file that defines the corresponding
+            # apex_set.
+            bp_file = os.path.join(dest_dir, "sdk_library/Android.bp")
+            os.makedirs(os.path.dirname(bp_file), exist_ok=True)
 
             # The first sdk in the list is the name to use.
             sdk_name = module.sdks[0]
@@ -338,24 +345,21 @@ java_sdk_library_import {{
         "test_{aosp_apex}",
     ],
     public: {{
-        jars: ["sdk_library/public/{module_name}-stubs.jar"],
-        stub_srcs: ["sdk_library/public/{module_name}.srcjar"],
-        current_api: "sdk_library/public/{module_name}.txt",
-        removed_api: "sdk_library/public/{module_name}-removed.txt",
+        jars: ["public/{module_name}-stubs.jar"],
+        current_api: "public/{module_name}.txt",
+        removed_api: "public/{module_name}-removed.txt",
         sdk_version: "module_current",
     }},
     system: {{
-        jars: ["sdk_library/system/{module_name}-stubs.jar"],
-        stub_srcs: ["sdk_library/system/{module_name}.srcjar"],
-        current_api: "sdk_library/system/{module_name}.txt",
-        removed_api: "sdk_library/system/{module_name}-removed.txt",
+        jars: ["system/{module_name}-stubs.jar"],
+        current_api: "system/{module_name}.txt",
+        removed_api: "system/{module_name}-removed.txt",
         sdk_version: "module_current",
     }},
     module_lib: {{
-        jars: ["sdk_library/module-lib/{module_name}-stubs.jar"],
-        stub_srcs: ["sdk_library/module-lib/{module_name}.srcjar"],
-        current_api: "sdk_library/module-lib/{module_name}.txt",
-        removed_api: "sdk_library/module-lib/{module_name}-removed.txt",
+        jars: ["module-lib/{module_name}-stubs.jar"],
+        current_api: "module-lib/{module_name}.txt",
+        removed_api: "module-lib/{module_name}-removed.txt",
         sdk_version: "module_current",
     }},
 }}
@@ -863,7 +867,14 @@ class SdkDistProducer:
         # Prepare the dist directory for the sdks.
         self.prepare()
 
+        # Group build releases so that those with the same Soong environment are
+        # run consecutively to avoid having to regenerate ninja files.
+        grouped_by_env = defaultdict(list)
         for build_release in build_releases:
+            grouped_by_env[str(build_release.soong_env)].append(build_release)
+        ordered = [br for _, group in grouped_by_env.items() for br in group]
+
+        for build_release in ordered:
             # Only build modules that are required for this build release.
             filtered_modules = [
                 m for m in modules if m.is_required_for(build_release)
@@ -898,11 +909,11 @@ class SdkDistProducer:
 
     def produce_bundled_dist_for_build_release(self, build_release, modules):
         modules = [m for m in modules if m.is_bundled()]
-        sdk_versions = build_release.sdk_versions
-        snapshots_dir = self.snapshot_builder.build_snapshots(
-            build_release, sdk_versions, modules)
-        self.populate_bundled_dist(build_release, modules, snapshots_dir)
-        return snapshots_dir
+        if modules:
+            sdk_versions = build_release.sdk_versions
+            snapshots_dir = self.snapshot_builder.build_snapshots(
+                build_release, sdk_versions, modules)
+            self.populate_bundled_dist(build_release, modules, snapshots_dir)
 
     def populate_unbundled_dist(self, build_release, sdk_versions, modules,
                                 snapshots_dir):
@@ -911,34 +922,31 @@ class SdkDistProducer:
         for module in modules:
             for sdk_version in sdk_versions:
                 for sdk in module.sdks:
-                    sdk_dist_dir = os.path.join(
-                        build_release_dist_dir, sdk_version)
-                    self.populate_dist_snapshot(
-                        build_release, module, sdk, sdk_dist_dir, sdk_version,
-                        snapshots_dir)
+                    sdk_dist_dir = os.path.join(build_release_dist_dir,
+                                                sdk_version)
+                    self.populate_dist_snapshot(build_release, module, sdk,
+                                                sdk_dist_dir, sdk_version,
+                                                snapshots_dir)
 
     def populate_bundled_dist(self, build_release, modules, snapshots_dir):
         sdk_dist_dir = self.bundled_mainline_sdks_dir
         for module in modules:
             for sdk in module.sdks:
-                self.populate_dist_snapshot(
-                    build_release, module, sdk, sdk_dist_dir, "current",
-                    snapshots_dir)
+                self.populate_dist_snapshot(build_release, module, sdk,
+                                            sdk_dist_dir, "current",
+                                            snapshots_dir)
 
     def populate_dist_snapshot(self, build_release, module, sdk, sdk_dist_dir,
                                sdk_version, snapshots_dir):
-        subdir = re.sub("^.+-(sdk|(host|test)-exports)$", r'\1', sdk)
+        subdir = re.sub("^.+-(sdk|(host|test)-exports)$", r"\1", sdk)
         if subdir not in ("sdk", "host-exports", "test-exports"):
-            raise Exception(
-                f"{sdk} is not a valid name, expected it to end"
-                f" with -(sdk|host-exports|test-exports)"
-            )
+            raise Exception(f"{sdk} is not a valid name, expected it to end"
+                            f" with -(sdk|host-exports|test-exports)")
 
         sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, subdir)
         sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk, sdk_version)
         transformations = module.transformations(build_release)
-        self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir,
-                                   transformations)
+        self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir, transformations)
 
     def dist_sdk_snapshot_zip(self, src_sdk_zip, sdk_dist_dir, transformations):
         """Copy the sdk snapshot zip file to a dist directory.
