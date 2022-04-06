@@ -13,8 +13,13 @@ from pathlib import Path
 
 # See go/fetch_artifact for details on this script.
 FETCH_ARTIFACT = '/google/data/ro/projects/android/fetch_artifact'
-BUILD_TARGET = 'mainline_modules-userdebug'
-ARTIFACT_PATTERN = 'mainline-sdks/*-%d.zip'
+
+# This build target is used when fetching from a train build (TXXXXXXXX)
+BUILD_TARGET_TRAIN = 'train_build'
+# This build target is used when fetching from a non-train build (XXXXXXXX)
+BUILD_TARGET_CONTINUOUS = 'mainline_modules-user'
+# The glob of sdk artifacts to fetch
+ARTIFACT_PATTERN = 'mainline-sdks/current/*/sdk/*.zip'
 COMMIT_TEMPLATE = """Finalize artifacts for extension SDK %d
 
 Import from build id %s.
@@ -78,11 +83,12 @@ parser.add_argument('-a', '--amend_last_commit', action="store_true", help='Amen
 parser.add_argument('bid', help='Build server build ID')
 args = parser.parse_args()
 
+build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTINUOUS
 branch_name = 'finalize-%d' % args.finalize_sdk
-cmdline = " ".join(filter(lambda x: x not in ['-a', '--amend_last_commit'], sys.argv))
+cmdline = " ".join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
 
-tmpdir = fetch_artifacts(BUILD_TARGET, args.bid, ARTIFACT_PATTERN % args.finalize_sdk)
+tmpdir = fetch_artifacts(build_target, args.bid, ARTIFACT_PATTERN)
 
 created_dirs = defaultdict(list)
 
@@ -95,6 +101,9 @@ for f in tmpdir.iterdir():
         shutil.rmtree(target_dir)
     with zipfile.ZipFile(tmpdir.joinpath(f)) as zipFile:
         zipFile.extractall(target_dir)
+
+    # Just capture the artifacts, not the bp files of finalized versions
+    os.remove(target_dir.joinpath('Android.bp'))
 
     print('Created %s' % target_dir)
     created_dirs[repo].append(dir)
