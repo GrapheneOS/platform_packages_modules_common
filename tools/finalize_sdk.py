@@ -19,7 +19,7 @@ BUILD_TARGET_TRAIN = 'train_build'
 # This build target is used when fetching from a non-train build (XXXXXXXX)
 BUILD_TARGET_CONTINUOUS = 'mainline_modules-user'
 # The glob of sdk artifacts to fetch
-ARTIFACT_PATTERN = 'mainline-sdks/current/*/sdk/*.zip'
+ARTIFACT_PATTERN = 'mainline-sdks/current/{module_name}/sdk/*.zip'
 COMMIT_TEMPLATE = """Finalize artifacts for extension SDK %d
 
 Import from build id %s.
@@ -80,6 +80,7 @@ parser = argparse.ArgumentParser(description=('Finalize an extension SDK with pr
 parser.add_argument('-f', '--finalize_sdk', type=int, required=True, help='The numbered SDK to finalize.')
 parser.add_argument('-b', '--bug', type=int, required=True, help='The bug number to add to the commit message.')
 parser.add_argument('-a', '--amend_last_commit', action="store_true", help='Amend current HEAD commits instead of making new commits.')
+parser.add_argument('-m', '--modules', action='append', help='Modules to include. Can be provided multiple times, or not at all for all modules.')
 parser.add_argument('bid', help='Build server build ID')
 args = parser.parse_args()
 
@@ -87,26 +88,28 @@ build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTIN
 branch_name = 'finalize-%d' % args.finalize_sdk
 cmdline = " ".join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
-
-tmpdir = fetch_artifacts(build_target, args.bid, ARTIFACT_PATTERN)
+module_names = args.modules
+if not module_names:
+    module_names = ['*']
 
 created_dirs = defaultdict(list)
+for m in module_names:
+    tmpdir = fetch_artifacts(build_target, args.bid, ARTIFACT_PATTERN.format(module_name=m))
+    for f in tmpdir.iterdir():
+        repo = repo_for_sdk(f.name)
+        dir = dir_for_sdk(f.name, args.finalize_sdk)
+        target_dir = repo.joinpath(dir)
+        if target_dir.is_dir():
+            print('Removing existing dir %s' % target_dir)
+            shutil.rmtree(target_dir)
+        with zipfile.ZipFile(tmpdir.joinpath(f)) as zipFile:
+            zipFile.extractall(target_dir)
 
-for f in tmpdir.iterdir():
-    repo = repo_for_sdk(f.name)
-    dir = dir_for_sdk(f.name, args.finalize_sdk)
-    target_dir = repo.joinpath(dir)
-    if target_dir.is_dir():
-        print('Removing existing dir %s' % target_dir)
-        shutil.rmtree(target_dir)
-    with zipfile.ZipFile(tmpdir.joinpath(f)) as zipFile:
-        zipFile.extractall(target_dir)
+        # Just capture the artifacts, not the bp files of finalized versions
+        os.remove(target_dir.joinpath('Android.bp'))
 
-    # Just capture the artifacts, not the bp files of finalized versions
-    os.remove(target_dir.joinpath('Android.bp'))
-
-    print('Created %s' % target_dir)
-    created_dirs[repo].append(dir)
+        print('Created %s' % target_dir)
+        created_dirs[repo].append(dir)
 
 subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
 print('Running git commit')
