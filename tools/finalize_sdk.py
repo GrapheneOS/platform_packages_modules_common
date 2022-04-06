@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
 import argparse
+import glob
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,7 +15,7 @@ from pathlib import Path
 
 # See go/fetch_artifact for details on this script.
 FETCH_ARTIFACT = '/google/data/ro/projects/android/fetch_artifact'
-
+COMPAT_REPO = Path('prebuilts/sdk')
 # This build target is used when fetching from a train build (TXXXXXXXX)
 BUILD_TARGET_TRAIN = 'train_build'
 # This build target is used when fetching from a non-train build (XXXXXXXX)
@@ -92,7 +94,12 @@ module_names = args.modules
 if not module_names:
     module_names = ['*']
 
-created_dirs = defaultdict(list)
+compat_dir = COMPAT_REPO.joinpath('extensions/%d' % args.finalize_sdk)
+if compat_dir.is_dir():
+    print('Removing existing dir %s' % compat_dir)
+    shutil.rmtree(compat_dir)
+
+created_dirs = defaultdict(set)
 for m in module_names:
     tmpdir = fetch_artifacts(build_target, args.bid, ARTIFACT_PATTERN.format(module_name=m))
     for f in tmpdir.iterdir():
@@ -109,13 +116,22 @@ for m in module_names:
         os.remove(target_dir.joinpath('Android.bp'))
 
         print('Created %s' % target_dir)
-        created_dirs[repo].append(dir)
+        created_dirs[repo].add(dir)
+
+        # Copy api txt files to compat tracking dir
+        txt_files = [Path(p) for p in glob.glob(os.path.join(target_dir, 'sdk_library/*/*.txt'))]
+        for txt_file in txt_files:
+            api_type = txt_file.parts[-2]
+            dest_dir = compat_dir.joinpath(api_type, 'api')
+            os.makedirs(dest_dir, exist_ok = True)
+            shutil.copy(txt_file, dest_dir)
+            created_dirs[COMPAT_REPO].add(dest_dir.relative_to(COMPAT_REPO))
 
 subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
 print('Running git commit')
 for repo in created_dirs:
     git = ['git', '-C', str(repo)]
-    subprocess.check_output(git + ['add'] + created_dirs[repo])
+    subprocess.check_output(git + ['add'] + list(created_dirs[repo]))
     if args.amend_last_commit:
         change_id = '\n' + re.search(r'Change-Id: [^\\n]+', str(subprocess.check_output(git + ['log', '-1']))).group(0)
         subprocess.check_output(git + ['commit', '--amend', '-m', commit_message + change_id])
