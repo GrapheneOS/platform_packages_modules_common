@@ -9,6 +9,7 @@ import tempfile
 import zipfile
 
 from collections import defaultdict
+from pathlib import Path
 
 # See go/fetch_artifact for details on this script.
 FETCH_ARTIFACT = '/google/data/ro/projects/android/fetch_artifact'
@@ -29,14 +30,14 @@ def fail(*args, **kwargs):
     sys.exit(1)
 
 def fetch_artifacts(target, build_id, artifact_path):
-    tmpdir = tempfile.TemporaryDirectory().name
-    os.mkdir(tmpdir)
+    tmpdir = Path(tempfile.TemporaryDirectory().name)
+    tmpdir.mkdir()
     print('Fetching %s from %s ...' % (artifact_path, target))
     fetch_cmd = [FETCH_ARTIFACT]
     fetch_cmd.extend(['--bid', str(build_id)])
     fetch_cmd.extend(['--target', target])
     fetch_cmd.append(artifact_path)
-    fetch_cmd.append(tmpdir)
+    fetch_cmd.append(str(tmpdir))
     print("Running: " + ' '.join(fetch_cmd))
     try:
         subprocess.check_output(fetch_cmd, stderr=subprocess.STDOUT)
@@ -47,8 +48,8 @@ def fetch_artifacts(target, build_id, artifact_path):
 def repo_for_sdk(filename):
     module = filename.split('-')[0]
     target_dir = ''
-    if module == 'media': return 'prebuilts/module_sdk/Media'
-    if module == 'tethering': return 'prebuilts/module_sdk/Connectivity'
+    if module == 'media': return Path('prebuilts/module_sdk/Media')
+    if module == 'tethering': return Path('prebuilts/module_sdk/Connectivity')
     for dir in os.listdir('prebuilts/module_sdk/'):
         if module.lower() in dir.lower():
             if target_dir:
@@ -57,7 +58,7 @@ def repo_for_sdk(filename):
     if not target_dir:
         fail('Could not find a target dir for %s' % filename)
 
-    return 'prebuilts/module_sdk/%s' % target_dir
+    return Path('prebuilts/module_sdk/%s' % target_dir)
 
 def dir_for_sdk(filename, version):
     base = str(version)
@@ -85,14 +86,14 @@ tmpdir = fetch_artifacts(BUILD_TARGET, args.bid, ARTIFACT_PATTERN % args.finaliz
 
 created_dirs = defaultdict(list)
 
-for f in os.listdir(tmpdir):
-    repo = repo_for_sdk(f)
-    dir = dir_for_sdk(f, args.finalize_sdk)
-    target_dir = os.path.join(repo, dir)
-    if os.path.isfile(target_dir):
+for f in tmpdir.iterdir():
+    repo = repo_for_sdk(f.name)
+    dir = dir_for_sdk(f.name, args.finalize_sdk)
+    target_dir = repo.joinpath(dir)
+    if target_dir.is_dir():
         print('Removing existing dir %s' % target_dir)
         shutil.rmtree(target_dir)
-    with zipfile.ZipFile(os.path.join(tmpdir, f)) as zipFile:
+    with zipfile.ZipFile(tmpdir.joinpath(f)) as zipFile:
         zipFile.extractall(target_dir)
 
     print('Created %s' % target_dir)
@@ -101,7 +102,7 @@ for f in os.listdir(tmpdir):
 subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
 print('Running git commit')
 for repo in created_dirs:
-    git = ['git', '-C', repo]
+    git = ['git', '-C', str(repo)]
     subprocess.check_output(git + ['add'] + created_dirs[repo])
     if args.amend_last_commit:
         change_id = '\n' + re.search(r'Change-Id: [^\\n]+', str(subprocess.check_output(git + ['log', '-1']))).group(0)
