@@ -56,7 +56,15 @@ function main() {
   # provided by the build to ensure consistency across build environments.
   export DIST_DIR OUT_DIR
 
-  prebuilts/build-tools/linux-x86/bin/py3-cmd -u "${py3script}"
+  # Make sure that the ANDROID_BUILD_TOP (which is the same as the current
+  # directory as checked above) is exported to Python.
+  export ANDROID_BUILD_TOP="${PWD}"
+
+  # The path to this tool is the .sh script that lives alongside the .py script.
+  TOOL_PATH="${py3script%.py}.sh"
+  prebuilts/build-tools/linux-x86/bin/py3-cmd -u "${py3script}" \
+      --tool-path "${TOOL_PATH}" \
+      "$@"
 }
 
 init "$@"
