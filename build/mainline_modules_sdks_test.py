@@ -15,6 +15,7 @@
 # limitations under the License.
 """Unit tests for mainline_modules_sdks.py."""
 import dataclasses
+import pathlib
 import re
 import typing
 from pathlib import Path
@@ -112,6 +113,10 @@ class TestProduceDist(unittest.TestCase):
         return files
 
     def test_unbundled_modules(self):
+        # Create the out/soong/build_number.txt file that is copied into the
+        # snapshots.
+        self.create_build_number_file()
+
         modules = [
             MAINLINE_MODULES_BY_APEX["com.android.art"],
             MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
@@ -175,11 +180,13 @@ class TestProduceDist(unittest.TestCase):
             "com.android.ipsec/sdk_library/public/android.net.ipsec.ike-stubs.jar",
             "com.android.ipsec/sdk_library/public/android.net.ipsec.ike.srcjar",
             "com.android.ipsec/sdk_library/public/android.net.ipsec.ike.txt",
+            "com.android.ipsec/snapshot-creation-build-number.txt",
             google_wifi_android_bp,
             "com.google.android.wifi/sdk_library/public/framework-wifi-removed.txt",
             "com.google.android.wifi/sdk_library/public/framework-wifi-stubs.jar",
             "com.google.android.wifi/sdk_library/public/framework-wifi.srcjar",
             "com.google.android.wifi/sdk_library/public/framework-wifi.txt",
+            "com.google.android.wifi/snapshot-creation-build-number.txt",
             "ipsec-module-sdk-current.zip",
             "wifi-module-sdk-current.zip",
         ], sorted(self.list_files_in_dir(r_snaphot_dir)))
@@ -263,7 +270,18 @@ class TestProduceDist(unittest.TestCase):
             ],
             sorted(self.list_files_in_dir(self.tmp_dist_dir)))
 
+    def create_build_number_file(self):
+        soong_dir = os.path.join(self.tmp_out_dir, "soong")
+        os.makedirs(soong_dir, exist_ok=True)
+        build_number_file = os.path.join(soong_dir, "build_number.txt")
+        with open(build_number_file, "w", encoding="utf8") as f:
+            f.write("build-number")
+
     def test_snapshot_build_order(self):
+        # Create the out/soong/build_number.txt file that is copied into the
+        # snapshots.
+        self.create_build_number_file()
+
         subprocess_runner = unittest.mock.Mock(mm.SubprocessRunner)
         snapshot_builder = FakeSnapshotBuilder(
             tool_path="path/to/mainline_modules_sdks.sh",
