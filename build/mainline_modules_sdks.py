@@ -303,6 +303,8 @@ class SnapshotBuilder:
         r_snapshot_dir = os.path.join(snapshot_dir, "for-R-build")
         shutil.rmtree(r_snapshot_dir, ignore_errors=True)
 
+        build_number_file = os.path.join(self.out_dir, "soong/build_number.txt")
+
         for module in modules:
             apex = module.apex
             dest_dir = os.path.join(r_snapshot_dir, apex)
@@ -323,6 +325,7 @@ class SnapshotBuilder:
                 bp.write(f"//     {self.tool_path}\n")
                 bp.write(COPYRIGHT_BOILERPLATE)
                 aosp_apex = google_to_aosp_name(apex)
+
                 for library in module.for_r_build.sdk_libraries:
                     module_name = library.name
                     shared_library = str(library.shared_library).lower()
@@ -365,6 +368,12 @@ java_sdk_library_import {{
 }}
 """)
 
+                # Copy the build_number.txt file into the snapshot.
+                snapshot_build_number_file = os.path.join(
+                    dest_dir, "snapshot-creation-build-number.txt")
+                shutil.copy(build_number_file, snapshot_build_number_file)
+
+            # Now zip up the files into a snapshot zip file.
             base_file = os.path.join(r_snapshot_dir, sdk_name + "-current")
             shutil.make_archive(base_file, "zip", dest_dir)
 
