@@ -30,8 +30,12 @@ android_app_certificate {
 apex_test {
     name: "test_com.android.modules.apkinapex",
     manifest: "manifest.json",
-    file_contexts: ":apex.test-file_contexts",  // Default, please edit, see go/android-apex-howto
+    file_contexts: ":apex.test-file_contexts",
     key: "test_com.android.modules.apkinapex.key",
     certificate: ":test_com.android.modules.apkinapex.certificate",
     updatable: false,
+    apps: [
+        "com.android.modules.apkinapex.apps.installable",
+        "com.android.modules.apkinapex.apps.futureminsdk",
+    ],
 }
