@@ -26,6 +26,8 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.internal.util.test.SystemPreparer;
 
+import com.android.modules.utils.build.testing.DeviceSdkLevel;
+
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +52,7 @@ public class UpdatableSharedLibsTest extends BaseHostJUnit4Test {
         if (!getDevice().isAdbRoot()) {
             getDevice().enableAdbRoot();
         }
+        assumeTrue("Device needs to run on at least T", isAtLeastT());
         assumeTrue("Device does not support updating APEX", mHostUtils.isApexUpdateSupported());
         assumeTrue("Device requires root", getDevice().isAdbRoot());
 
@@ -79,5 +82,10 @@ public class UpdatableSharedLibsTest extends BaseHostJUnit4Test {
             "Package " + packageName + " requires "
                 + "unavailable shared library "
                 + "com.android.modules.updatablesharedlibs.libs.since.t");
+    }
+
+    protected boolean isAtLeastT() throws Exception {
+        DeviceSdkLevel deviceSdkLevel = new DeviceSdkLevel(getDevice());
+        return deviceSdkLevel.isDeviceAtLeastT();
     }
 }
