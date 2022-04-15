@@ -678,6 +678,11 @@ MAINLINE_MODULES = [
         first_release=Tiramisu,
     ),
     MainlineModule(
+        apex="com.android.appsearch",
+        sdks=["appsearch-sdk"],
+        first_release=Tiramisu,
+    ),
+    MainlineModule(
         apex="com.android.art",
         sdks=[
             "art-module-sdk",
