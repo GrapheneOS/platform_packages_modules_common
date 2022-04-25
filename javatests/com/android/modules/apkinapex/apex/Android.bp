@@ -37,5 +37,7 @@ apex_test {
     apps: [
         "com.android.modules.apkinapex.apps.installable",
         "com.android.modules.apkinapex.apps.futureminsdk",
+        "com.android.modules.apkinapex.apps.futuretargetsdk",
+        "com.android.modules.apkinapex.apps.pastmaxsdk",
     ],
 }

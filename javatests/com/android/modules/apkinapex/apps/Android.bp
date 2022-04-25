@@ -28,6 +28,20 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
+    name: "com.android.modules.apkinapex.apps.futuretargetsdk",
+    target_sdk_version: "Tiramisu",
+    apex_available: [ "test_com.android.modules.apkinapex" ],
+    manifest: "FutureTargetSdkAndroidManifest.xml"
+}
+
+android_test_helper_app {
+    name: "com.android.modules.apkinapex.apps.pastmaxsdk",
+    target_sdk_version: "Tiramisu",
+    apex_available: [ "test_com.android.modules.apkinapex" ],
+    manifest: "PastMaxSdkAndroidManifest.xml"
+}
+
+android_test_helper_app {
     name: "com.android.modules.apkinapex.apps.installable",
     target_sdk_version: "Tiramisu",
     min_sdk_version: "23",
