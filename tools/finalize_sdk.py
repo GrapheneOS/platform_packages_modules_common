@@ -90,9 +90,7 @@ build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTIN
 branch_name = 'finalize-%d' % args.finalize_sdk
 cmdline = " ".join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
-module_names = args.modules
-if not module_names:
-    module_names = ['*']
+module_names = args.modules or ['*']
 
 compat_dir = COMPAT_REPO.joinpath('extensions/%d' % args.finalize_sdk)
 if compat_dir.is_dir():
@@ -112,8 +110,8 @@ for m in module_names:
         with zipfile.ZipFile(tmpdir.joinpath(f)) as zipFile:
             zipFile.extractall(target_dir)
 
-        # Just capture the artifacts, not the bp files of finalized versions
-        os.remove(target_dir.joinpath('Android.bp'))
+        # Disable the Android.bp, but keep it for reference / potential future use.
+        shutil.move(target_dir.joinpath('Android.bp'), target_dir.joinpath('Android.bp.auto'))
 
         print('Created %s' % target_dir)
         created_dirs[repo].add(dir)
