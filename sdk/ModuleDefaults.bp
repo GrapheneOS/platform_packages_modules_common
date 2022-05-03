@@ -111,6 +111,11 @@ java_defaults {
     // Collates API usages from each module for further analysis.
     plugins: ["java_api_finder"],
 
+    // Disallow disabling the NewApi lint check.
+    lint: {
+        strict_updatability_linting: true,
+    },
+
     dist_group: "android",
 }
 
