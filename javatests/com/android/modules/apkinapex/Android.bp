@@ -34,4 +34,8 @@ java_test_host {
         "modules-utils-build-testing",
         "truth-prebuilt",
     ],
+    test_suites: [
+        "general-tests",
+        "mts-core",
+    ],
 }
