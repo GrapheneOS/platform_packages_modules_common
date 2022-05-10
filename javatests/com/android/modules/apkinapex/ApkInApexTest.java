@@ -34,6 +34,8 @@ import org.junit.runner.RunWith;
 
 import android.cts.install.lib.host.InstallUtilsHost;
 
+import java.util.Set;
+
 /**
  * Collection of tests to test functionality of APKs in apexes.
  *
@@ -63,18 +65,18 @@ public class ApkInApexTest extends BaseHostJUnit4Test {
         mPreparer.pushResourceFile(apex, "/system/apex/" + apex);
         mPreparer.reboot();
 
-        assertValidApkInApexInstalled();
-        assertApkInApexWithMinSdkVersionWithFutureCodenameFailed();
-    }
+        Set<String> packages = getDevice().getInstalledPackageNames();
 
-    private void assertValidApkInApexInstalled() throws DeviceNotAvailableException {
-        String result = getDevice().executeShellCommand("pm list packages "
-                + "com.android.modules.apkinapex.apps.installable");
-        assertThat(result).isNotEmpty();
-    }
-    private void assertApkInApexWithMinSdkVersionWithFutureCodenameFailed() throws DeviceNotAvailableException {
-        String result = getDevice().executeShellCommand("pm list packages "
-                + "com.android.modules.apkinapex.apps.futureminsdk");
-        assertThat(result).isEmpty();
+        assertThat(packages)
+                .containsAtLeast(
+                        "com.android.modules.apkinapex.apps.installable",
+                        "com.android.modules.apkinapex.apps.futuretargetsdk"
+                );
+
+        assertThat(packages)
+                .containsNoneOf(
+                        "com.android.modules.apkinapex.apps.futureminsdk",
+                        "com.android.modules.apkinapex.apps.pastmaxsdk"
+                );
     }
 }
