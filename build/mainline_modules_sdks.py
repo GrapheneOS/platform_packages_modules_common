@@ -611,11 +611,7 @@ class MainlineModule:
     #       source was first included. So, a module that was added in build T
     #       could potentially be used in an S release and so its SDK will need
     #       to be made available for S builds.
-    #
-    # Defaults to the latest build, i.e. the build on which this script is run
-    # as the snapshot is assumed to be needed in the build containing the sdk
-    # source.
-    first_release: BuildRelease = LATEST
+    first_release: BuildRelease
 
     # The configuration variable, defaults to ANDROID:module_build_from_source
     configVar: ConfigVar = ConfigVar(
@@ -659,6 +655,10 @@ class BundledMainlineModule(MainlineModule):
 
     A bundled module is always preloaded into the platform images.
     """
+
+    # Defaults to the latest build, i.e. the build on which this script is run
+    # as bundled modules are, by definition, only needed in this build.
+    first_release: BuildRelease = LATEST
 
     def is_bundled(self):
         return True
@@ -762,6 +762,7 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.scheduling",
         sdks=["scheduling-sdk"],
+        first_release=S,
     ),
     MainlineModule(
         apex="com.android.sdkext",
@@ -790,6 +791,7 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.uwb",
         sdks=["uwb-module-sdk"],
+        first_release=Tiramisu,
     ),
     MainlineModule(
         apex="com.android.wifi",
@@ -801,7 +803,7 @@ MAINLINE_MODULES = [
     ),
 ]
 
-# List of Mainline modules that currently are never built unbundled. They should
+# List of Mainline modules that currently are never built unbundled. They must
 # not specify first_release, and they don't have com.google.android
 # counterparts.
 BUNDLED_MAINLINE_MODULES = [
