@@ -699,6 +699,11 @@ MAINLINE_MODULES = [
         configModuleTypePrefix="art_prebuilt_",
     ),
     MainlineModule(
+        apex="com.android.bluetooth",
+        sdks=["bluetooth-module-sdk"],
+        first_release=Tiramisu,
+    ),
+    MainlineModule(
         apex="com.android.conscrypt",
         sdks=[
             "conscrypt-module-sdk",
