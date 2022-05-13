@@ -22,7 +22,7 @@ BUILD_TARGET_TRAIN = 'train_build'
 # This build target is used when fetching from a non-train build (XXXXXXXX)
 BUILD_TARGET_CONTINUOUS = 'mainline_modules-user'
 # The glob of sdk artifacts to fetch
-ARTIFACT_PATTERN = 'mainline-sdks/current/{module_name}/sdk/*.zip'
+ARTIFACT_PATTERN = 'mainline-sdks/for-latest-build/current/{module_name}/sdk/*.zip'
 COMMIT_TEMPLATE = """Finalize artifacts for extension SDK %d
 
 Import from build id %s.
