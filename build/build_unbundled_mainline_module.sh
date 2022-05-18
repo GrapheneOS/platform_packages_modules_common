@@ -56,7 +56,6 @@ readonly -a DEFAULT_MODULES=(
   com.android.runtime
   com.android.sdkext
   com.android.sepolicy
-  com.android.telephony
   # TODO(b/210694291): include tethering module in the build
   # com.android.tethering
   com.android.tzdata
