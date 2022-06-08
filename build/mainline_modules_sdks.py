@@ -108,9 +108,8 @@ class SoongConfigBoilerplateInserter(SoongConfigVarTransformation):
     through a Soong configuration variable.
     """
 
-    # The bp file containing the definitions of the configuration module types
-    # to use in the sdk.
-    configBpDefFile: str
+    # The configuration variable that will control the prefer setting.
+    configVar: ConfigVar
 
     # The prefix to use for the soong config module types.
     configModuleTypePrefix: str
@@ -202,32 +201,14 @@ class SoongConfigBoilerplateInserter(SoongConfigVarTransformation):
             content_lines.extend(module_content)
             content_lines.append("}")
 
-        if self.configBpDefFile:
-            # Add the soong_config_module_type_import module definition that
-            # imports the soong config module types into this bp file to the
-            # header lines so that they appear before any uses.
-            module_types = "\n".join([
-                f'        "{self.config_module_type(mt)}",'
-                for mt in sorted(config_module_types)
-            ])
+        # Add the soong_config_module_type module definitions to the header
+        # lines so that they appear before any uses.
+        header_lines.append("")
+        for module_type in sorted(config_module_types):
+            # Create the corresponding soong config module type name by adding
+            # the prefix.
+            config_module_type = self.configModuleTypePrefix + module_type
             header_lines.append(f"""
-// Soong config variable stanza added by {producer.script}.
-soong_config_module_type_import {{
-    from: "{self.configBpDefFile}",
-    module_types: [
-{module_types}
-    ],
-}}
-""")
-        else:
-            # Add the soong_config_module_type module definitions to the header
-            # lines so that they appear before any uses.
-            header_lines.append("")
-            for module_type in sorted(config_module_types):
-                # Create the corresponding soong config module type name by
-                # adding the prefix.
-                config_module_type = self.config_module_type(module_type)
-                header_lines.append(f"""
 // Soong config variable module type added by {producer.script}.
 soong_config_module_type {{
     name: "{config_module_type}",
@@ -823,13 +804,6 @@ class MainlineModule:
         name="module_build_from_source",
     )
 
-    # The bp file containing the definitions of the configuration module types
-    # to use in the sdk.
-    configBpDefFile: str = "packages/modules/common/Android.bp"
-
-    # The prefix to use for the soong config module types.
-    configModuleTypePrefix: str = "module_"
-
     for_r_build: typing.Optional[ForRBuild] = None
 
     # The last release on which this module was optional.
@@ -873,13 +847,11 @@ class MainlineModule:
         """Returns true for bundled modules. See BundledMainlineModule."""
         return False
 
-    def transformations(self, build_release):
+    def transformations(self, build_release, sdk_type):
         """Returns the transformations to apply to this module's snapshot(s)."""
         transformations = []
 
         config_var = self.configVar
-        config_module_type_prefix = self.configModuleTypePrefix
-        config_bp_def_file = self.configBpDefFile
 
         # If the module is optional then it needs its own Soong config
         # variable to allow it to be managed separately from other modules.
@@ -889,18 +861,16 @@ class MainlineModule:
                 namespace=f"{self.short_name}_module",
                 name="source_build",
             )
-            config_module_type_prefix = f"{self.short_name}_prebuilt_"
-            # Optional modules don't have their own config_bp_def_file so
-            # they have to generate the soong_config_module_types inline.
-            config_bp_def_file = ""
 
         prefer_handling = build_release.preferHandling
         if prefer_handling == PreferHandling.SOONG_CONFIG:
+            sdk_type_prefix = sdk_type.configModuleTypePrefix
+            config_module_type_prefix = \
+                f"{self.short_name}{sdk_type_prefix}_prebuilt_"
             inserter = SoongConfigBoilerplateInserter(
                 "Android.bp",
                 configVar=config_var,
-                configModuleTypePrefix=config_module_type_prefix,
-                configBpDefFile=config_bp_def_file)
+                configModuleTypePrefix=config_module_type_prefix)
             transformations.append(inserter)
         elif prefer_handling == PreferHandling.USE_SOURCE_CONFIG_VAR_PROPERTY:
             transformation = UseSourceConfigVarTransformation(
@@ -928,7 +898,7 @@ class BundledMainlineModule(MainlineModule):
     def is_bundled(self):
         return True
 
-    def transformations(self, build_release):
+    def transformations(self, build_release, sdk_type):
         # Bundled modules are only used on thin branches where the corresponding
         # sources are absent, so skip transformations and keep the default
         # `prefer: false`.
@@ -950,8 +920,6 @@ MAINLINE_MODULES = [
             namespace="art_module",
             name="source_build",
         ),
-        configBpDefFile="prebuilts/module_sdk/art/SoongConfig.bp",
-        configModuleTypePrefix="art_prebuilt_",
     ),
     MainlineModule(
         apex="com.android.conscrypt",
@@ -1233,7 +1201,8 @@ class SdkDistProducer:
 
         sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, subdir)
         sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk, sdk_version)
-        transformations = module.transformations(build_release)
+        sdk_type = sdk_type_from_name(sdk)
+        transformations = module.transformations(build_release, sdk_type)
         self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir, transformations)
 
     def dist_sdk_snapshot_zip(self, src_sdk_zip, sdk_dist_dir, transformations):
@@ -1380,15 +1349,24 @@ def google_to_aosp_name(name):
 class SdkType:
     name: str
 
+    configModuleTypePrefix: str
+
     providesApis: bool = False
 
 
 Sdk = SdkType(
     name="sdk",
+    configModuleTypePrefix="",
     providesApis=True,
 )
-HostExports = SdkType(name="host-exports")
-TestExports = SdkType(name="test-exports")
+HostExports = SdkType(
+    name="host-exports",
+    configModuleTypePrefix="_host_exports",
+)
+TestExports = SdkType(
+    name="test-exports",
+    configModuleTypePrefix="_test_exports",
+)
 
 
 def sdk_type_from_name(name):
