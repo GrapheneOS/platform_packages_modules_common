@@ -74,6 +74,59 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                                               module.for_r_build)
         return sdks_out_dir
 
+    def get_art_module_info_file_data(self):
+        info_file_data = f"""[
+  {{
+    "@type": "java_sdk_library",
+    "@name": "art.module.public.api",
+    "@deps": [
+      "libcore_license"
+    ],
+    "dist_stem": "art",
+    "scopes": {{
+      "public": {{
+        "current_api": "sdk_library/public/art.module.public.api.txt",
+        "latest_api": "{Path(self.mainline_sdks_dir).joinpath("test")}/prebuilts/sdk/art.api.public.latest/gen/art.api.public.latest",
+        "latest_removed_api": "{Path(self.mainline_sdks_dir).joinpath("test")}/prebuilts/sdk/art-removed.api.public.latest/gen/art-removed.api.public.latest",
+        "removed_api": "sdk_library/public/art.module.public.api-removed.txt"
+      }}
+    }}
+  }}
+]
+"""
+        return info_file_data
+
+    @staticmethod
+    def write_data_to_file(file, data):
+        with open(file, "w") as file:
+            file.write(data)
+
+    def create_snapshot_info_file(self, module, sdk_info_file):
+        if module == MAINLINE_MODULES_BY_APEX["com.android.art"]:
+            self.write_data_to_file(sdk_info_file,
+                                    self.get_art_module_info_file_data())
+        else:
+            # For rest of the modules, generate an empty .info file.
+            self.write_data_to_file(sdk_info_file, "[]")
+
+    def build_sdk_scope_targets(self, build_release, sdk_version, modules):
+        target_paths = []
+        for module in modules:
+            for sdk in module.sdks:
+                if "host-exports" in sdk or "test-exports" in sdk:
+                    continue
+
+                sdk_info_file = mm.sdk_snapshot_info_file(
+                    Path(self.mainline_sdks_dir).joinpath("test"), sdk,
+                    sdk_version)
+                self.create_snapshot_info_file(module, sdk_info_file)
+                target_paths.extend(self.latest_api_file_targets(sdk_info_file))
+
+        for target_path in target_paths:
+            os.makedirs(os.path.split(target_path)[0])
+            self.write_data_to_file(target_path, "")
+            # TODO(b/230609867): Add test to verify api diff file generation.
+
 
 class TestProduceDist(unittest.TestCase):
 
