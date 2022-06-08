@@ -904,7 +904,7 @@ class SdkDistProducer:
         sdk_versions = build_release.sdk_versions
         snapshots_dir = self.snapshot_builder.build_snapshots(
             build_release, sdk_versions, modules)
-        if build_release.name == LATEST:
+        if build_release == LATEST:
             self.snapshot_builder.build_sdk_scope_targets(
                 build_release, sdk_versions[0], modules)
         self.populate_unbundled_dist(build_release, sdk_versions, modules,
