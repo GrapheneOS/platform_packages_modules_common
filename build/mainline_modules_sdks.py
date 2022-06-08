@@ -246,6 +246,41 @@ class SnapshotBuilder:
         return os.path.join(self.mainline_sdks_dir,
                             f"{sdk_name}-{sdk_version}.zip")
 
+    def build_target_paths(self, build_release, sdk_version, target_paths):
+        # Extra environment variables to pass to the build process.
+        extraEnv = {
+            # TODO(ngeoffray): remove SOONG_ALLOW_MISSING_DEPENDENCIES, but
+            #  we currently break without it.
+            "SOONG_ALLOW_MISSING_DEPENDENCIES": "true",
+            # Set SOONG_SDK_SNAPSHOT_USE_SRCJAR to generate .srcjars inside
+            # sdk zip files as expected by prebuilt drop.
+            "SOONG_SDK_SNAPSHOT_USE_SRCJAR": "true",
+            # Set SOONG_SDK_SNAPSHOT_VERSION to generate the appropriately
+            # tagged version of the sdk.
+            "SOONG_SDK_SNAPSHOT_VERSION": sdk_version,
+        }
+        extraEnv.update(build_release.soong_env)
+
+        # Unless explicitly specified in the calling environment set
+        # TARGET_BUILD_VARIANT=user.
+        # This MUST be identical to the TARGET_BUILD_VARIANT used to build
+        # the corresponding APEXes otherwise it could result in different
+        # hidden API flags, see http://b/202398851#comment29 for more info.
+        target_build_variant = os.environ.get("TARGET_BUILD_VARIANT", "user")
+        cmd = [
+                  "build/soong/soong_ui.bash",
+                  "--make-mode",
+                  "--soong-only",
+                  f"TARGET_BUILD_VARIANT={target_build_variant}",
+                  "TARGET_PRODUCT=mainline_sdk",
+                  "MODULE_BUILD_FROM_SOURCE=true",
+                  "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
+              ] + target_paths
+        print_command(extraEnv, cmd)
+        env = os.environ.copy()
+        env.update(extraEnv)
+        self.subprocess_runner.run(cmd, env=env)
+
     def build_snapshots(self, build_release, sdk_versions, modules):
         # Build the SDKs once for each version.
         for sdk_version in sdk_versions:
@@ -257,40 +292,7 @@ class SnapshotBuilder:
                 for sdk in module.sdks
             ]
 
-            # Extra environment variables to pass to the build process.
-            extraEnv = {
-                # TODO(ngeoffray): remove SOONG_ALLOW_MISSING_DEPENDENCIES, but
-                #  we currently break without it.
-                "SOONG_ALLOW_MISSING_DEPENDENCIES": "true",
-                # Set SOONG_SDK_SNAPSHOT_USE_SRCJAR to generate .srcjars inside
-                # sdk zip files as expected by prebuilt drop.
-                "SOONG_SDK_SNAPSHOT_USE_SRCJAR": "true",
-                # Set SOONG_SDK_SNAPSHOT_VERSION to generate the appropriately
-                # tagged version of the sdk.
-                "SOONG_SDK_SNAPSHOT_VERSION": sdk_version,
-            }
-            extraEnv.update(build_release.soong_env)
-
-            # Unless explicitly specified in the calling environment set
-            # TARGET_BUILD_VARIANT=user.
-            # This MUST be identical to the TARGET_BUILD_VARIANT used to build
-            # the corresponding APEXes otherwise it could result in different
-            # hidden API flags, see http://b/202398851#comment29 for more info.
-            target_build_variant = os.environ.get("TARGET_BUILD_VARIANT",
-                                                  "user")
-            cmd = [
-                "build/soong/soong_ui.bash",
-                "--make-mode",
-                "--soong-only",
-                f"TARGET_BUILD_VARIANT={target_build_variant}",
-                "TARGET_PRODUCT=mainline_sdk",
-                "MODULE_BUILD_FROM_SOURCE=true",
-                "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
-            ] + paths
-            print_command(extraEnv, cmd)
-            env = os.environ.copy()
-            env.update(extraEnv)
-            self.subprocess_runner.run(cmd, env=env)
+            self.build_target_paths(build_release, sdk_version, paths)
         return self.mainline_sdks_dir
 
     def build_snapshots_for_build_r(self, build_release, sdk_versions, modules):
