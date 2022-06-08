@@ -268,14 +268,14 @@ class SnapshotBuilder:
         # hidden API flags, see http://b/202398851#comment29 for more info.
         target_build_variant = os.environ.get("TARGET_BUILD_VARIANT", "user")
         cmd = [
-                  "build/soong/soong_ui.bash",
-                  "--make-mode",
-                  "--soong-only",
-                  f"TARGET_BUILD_VARIANT={target_build_variant}",
-                  "TARGET_PRODUCT=mainline_sdk",
-                  "MODULE_BUILD_FROM_SOURCE=true",
-                  "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
-              ] + target_paths
+            "build/soong/soong_ui.bash",
+            "--make-mode",
+            "--soong-only",
+            f"TARGET_BUILD_VARIANT={target_build_variant}",
+            "TARGET_PRODUCT=mainline_sdk",
+            "MODULE_BUILD_FROM_SOURCE=true",
+            "out/soong/apex/depsinfo/new-allowed-deps.txt.check",
+        ] + target_paths
         print_command(extraEnv, cmd)
         env = os.environ.copy()
         env.update(extraEnv)
