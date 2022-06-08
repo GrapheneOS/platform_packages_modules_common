@@ -20,6 +20,7 @@ the APEXes in it are built, otherwise all configured SDKs are built.
 """
 import argparse
 import dataclasses
+import functools
 import io
 import os
 import re
@@ -161,25 +162,29 @@ class SoongConfigBoilerplateInserter(FileTransformation):
         }},
     }},""")
 
+                # Add the module type to the list of module types that need to
+                # have corresponding config module types.
+                config_module_types.add(module_type)
+
                 # Change the module type to the corresponding soong config
                 # module type by adding the prefix.
                 module_type = self.configModuleTypePrefix + module_type
-                # Add the module type to the list of module types that need to
-                # be imported into the bp file.
-                config_module_types.add(module_type)
 
             # Generate the module, possibly with the new module type and
-            # containing the
+            # containing the soong config variables entry.
             content_lines.append(module_type + " {")
             content_lines.extend(module_content)
             content_lines.append("}")
 
-        # Add the soong_config_module_type_import module definition that imports
-        # the soong config module types into this bp file to the header lines so
-        # that they appear before any uses.
-        module_types = "\n".join(
-            [f'        "{mt}",' for mt in sorted(config_module_types)])
-        header_lines.append(f"""
+        if self.configBpDefFile:
+            # Add the soong_config_module_type_import module definition that
+            # imports the soong config module types into this bp file to the
+            # header lines so that they appear before any uses.
+            module_types = "\n".join([
+                f'        "{self.configModuleTypePrefix}{mt}",'
+                for mt in sorted(config_module_types)
+            ])
+            header_lines.append(f"""
 // Soong config variable stanza added by {producer.script}.
 soong_config_module_type_import {{
     from: "{self.configBpDefFile}",
@@ -188,6 +193,24 @@ soong_config_module_type_import {{
     ],
 }}
 """)
+        else:
+            # Add the soong_config_module_type module definitions to the header
+            # lines so that they appear before any uses.
+            header_lines.append("")
+            for module_type in sorted(config_module_types):
+                # Create the corresponding soong config module type name by
+                # adding the prefix.
+                config_module_type = self.configModuleTypePrefix + module_type
+                header_lines.append(f"""
+// Soong config variable module type added by {producer.script}.
+soong_config_module_type {{
+    name: "{config_module_type}",
+    module_type: "{module_type}",
+    config_namespace: "{self.configVar.namespace}",
+    bool_variables: ["{self.configVar.name}"],
+    properties: ["prefer"],
+}}
+""".lstrip())
 
         # Overwrite the file with the updated contents.
         file.seek(0)
@@ -396,6 +419,7 @@ ALL_BUILD_RELEASES = []
 
 
 @dataclasses.dataclass(frozen=True)
+@functools.total_ordering
 class BuildRelease:
     """Represents a build release"""
 
@@ -452,6 +476,9 @@ class BuildRelease:
                     # snapshot suitable for a specific target build release.
                     "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": self.name,
                 })
+
+    def __eq__(self, other):
+        return self.ordinal == other.ordinal
 
     def __le__(self, other):
         return self.ordinal <= other.ordinal
@@ -628,6 +655,30 @@ class MainlineModule:
 
     for_r_build: typing.Optional[ForRBuild] = None
 
+    # The last release on which this module was optional.
+    #
+    # Some modules are optional when they are first released, usually because
+    # some vendors of Android devices have their own customizations of the
+    # module that they would like to preserve and which cannot yet be achieved
+    # through the existing APIs. Once those issues have been resolved then they
+    # will become mandatory.
+    #
+    # This field records the last build release in which they are optional. It
+    # defaults to None which indicates that the module was never optional.
+    last_optional_release: typing.Optional[BuildRelease] = None
+
+    # The short name for the module.
+    #
+    # Defaults to the last part of the apex name.
+    short_name: str = ""
+
+    def __post_init__(self):
+        # If short_name is not set then set it to the last component of the apex
+        # name.
+        if not self.short_name:
+            short_name = self.apex.rsplit(".", 1)[-1]
+            object.__setattr__(self, "short_name", short_name)
+
     def is_bundled(self):
         """Returns true for bundled modules. See BundledMainlineModule."""
         return False
@@ -636,11 +687,29 @@ class MainlineModule:
         """Returns the transformations to apply to this module's snapshot(s)."""
         transformations = []
         if build_release.supports_soong_config_boilerplate:
+
+            config_var = self.configVar
+            config_module_type_prefix = self.configModuleTypePrefix
+            config_bp_def_file = self.configBpDefFile
+
+            # If the module is optional then it needs its own Soong config
+            # variable to allow it to be managed separately from other modules.
+            if (self.last_optional_release and
+                    self.last_optional_release > build_release):
+                config_var = ConfigVar(
+                    namespace=f"{self.short_name}_module",
+                    name="source_build",
+                )
+                config_module_type_prefix = f"{self.short_name}_prebuilt_"
+                # Optional modules don't have their own config_bp_def_file so
+                # they have to generate the soong_config_module_types inline.
+                config_bp_def_file = ""
+
             inserter = SoongConfigBoilerplateInserter(
                 "Android.bp",
-                configVar=self.configVar,
-                configModuleTypePrefix=self.configModuleTypePrefix,
-                configBpDefFile=self.configBpDefFile)
+                configVar=config_var,
+                configModuleTypePrefix=config_module_type_prefix,
+                configBpDefFile=config_bp_def_file)
             transformations.append(inserter)
         return transformations
 
@@ -800,6 +869,8 @@ MAINLINE_MODULES = [
         for_r_build=ForRBuild(sdk_libraries=[
             SdkLibrary(name="framework-wifi"),
         ]),
+        # Wifi has always been and is still optional.
+        last_optional_release=LATEST,
     ),
 ]
 
