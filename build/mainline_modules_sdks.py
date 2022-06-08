@@ -21,6 +21,7 @@ the APEXes in it are built, otherwise all configured SDKs are built.
 import argparse
 import dataclasses
 import io
+import json
 import os
 import re
 import shutil
@@ -221,6 +222,11 @@ def sdk_snapshot_zip_file(snapshots_dir, sdk_name, sdk_version):
     return os.path.join(snapshots_dir, f"{sdk_name}-{sdk_version}.zip")
 
 
+def sdk_snapshot_info_file(snapshots_dir, sdk_name, sdk_version):
+    """Get the path to the sdk snapshot info file."""
+    return os.path.join(snapshots_dir, f"{sdk_name}-{sdk_version}.info")
+
+
 @dataclasses.dataclass()
 class SnapshotBuilder:
     """Builds sdk snapshots"""
@@ -380,6 +386,48 @@ java_sdk_library_import {{
             shutil.make_archive(base_file, "zip", dest_dir)
 
         return r_snapshot_dir
+
+    @staticmethod
+    def does_sdk_library_support_latest_api(sdk_library):
+        # TODO(b/235330409): remove service art from the exception list once
+        # this bug is fixed.
+        if sdk_library == "service-art" or \
+            sdk_library == "conscrypt.module.platform.api":
+            return False
+        return True
+
+    def latest_api_file_targets(self, sdk_info_file):
+        # Read the sdk info file and fetch the latest scope targets.
+        with open(sdk_info_file, "r") as sdk_info_file_object:
+            sdk_info_file_json = json.loads(sdk_info_file_object.read())
+
+        target_paths = []
+        for jsonItem in sdk_info_file_json:
+            if not jsonItem["@type"] == "java_sdk_library":
+                continue
+
+            if not self.does_sdk_library_support_latest_api(jsonItem["@name"]):
+                continue
+
+            for scope in jsonItem["scopes"]:
+                target_paths.append(jsonItem["scopes"][scope]["latest_api"])
+                target_paths.append(
+                    jsonItem["scopes"][scope]["latest_removed_api"])
+        return target_paths
+
+    def build_sdk_scope_targets(self, build_release, sdk_version, modules):
+        # Build the latest scope targets for each module sdk
+        # Compute the paths to all the latest scope targets for each module sdk.
+        target_paths = []
+        for module in modules:
+            for sdk in module.sdks:
+                if "host-exports" in sdk or "test-exports" in sdk:
+                    continue
+
+                sdk_info_file = sdk_snapshot_info_file(self.mainline_sdks_dir,
+                                                       sdk, sdk_version)
+                target_paths.extend(self.latest_api_file_targets(sdk_info_file))
+        self.build_target_paths(build_release, sdk_version, target_paths)
 
 
 # A list of the sdk versions to build. Usually just current but can include a
@@ -881,6 +929,9 @@ class SdkDistProducer:
         sdk_versions = build_release.sdk_versions
         snapshots_dir = self.snapshot_builder.build_snapshots(
             build_release, sdk_versions, modules)
+        if build_release.name == LATEST:
+            self.snapshot_builder.build_sdk_scope_targets(
+                build_release, sdk_versions[0], modules)
         self.populate_unbundled_dist(build_release, sdk_versions, modules,
                                      snapshots_dir)
         return snapshots_dir
@@ -900,6 +951,8 @@ class SdkDistProducer:
         for module in modules:
             for sdk_version in sdk_versions:
                 for sdk in module.sdks:
+                    # TODO(b/230609867): create API diff file for each module
+                    # sdk.
                     sdk_dist_dir = os.path.join(build_release_dist_dir,
                                                 sdk_version)
                     self.populate_dist_snapshot(build_release, module, sdk,
