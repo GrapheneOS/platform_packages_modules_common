@@ -47,7 +47,8 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         z.writestr(f"sdk_library/public/{name}-removed.txt", "")
         z.writestr(f"sdk_library/public/{name}.srcjar", "")
         z.writestr(f"sdk_library/public/{name}-stubs.jar", "")
-        z.writestr(f"sdk_library/public/{name}.txt", "")
+        z.writestr(f"sdk_library/public/{name}.txt",
+                   "method public int testMethod(int);")
 
     def create_snapshot_file(self, out_dir, name, version, for_r_build):
         zip_file = Path(mm.sdk_snapshot_zip_file(out_dir, name, version))
@@ -74,7 +75,7 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                                               module.for_r_build)
         return sdks_out_dir
 
-    def get_art_module_info_file_data(self):
+    def get_art_module_info_file_data(self, sdk):
         info_file_data = f"""[
   {{
     "@type": "java_sdk_library",
@@ -85,10 +86,10 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
     "dist_stem": "art",
     "scopes": {{
       "public": {{
-        "current_api": "sdk_library/public/art.module.public.api.txt",
+        "current_api": "sdk_library/public/{re.sub(r"-.*$", "", sdk)}.txt",
         "latest_api": "{Path(self.mainline_sdks_dir).joinpath("test")}/prebuilts/sdk/art.api.public.latest/gen/art.api.public.latest",
         "latest_removed_api": "{Path(self.mainline_sdks_dir).joinpath("test")}/prebuilts/sdk/art-removed.api.public.latest/gen/art-removed.api.public.latest",
-        "removed_api": "sdk_library/public/art.module.public.api-removed.txt"
+        "removed_api": "sdk_library/public/{re.sub(r"-.*$", "", sdk)}-removed.txt"
       }}
     }}
   }}
@@ -101,16 +102,17 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         with open(file, "w") as file:
             file.write(data)
 
-    def create_snapshot_info_file(self, module, sdk_info_file):
+    def create_snapshot_info_file(self, module, sdk_info_file, sdk):
         if module == MAINLINE_MODULES_BY_APEX["com.android.art"]:
             self.write_data_to_file(sdk_info_file,
-                                    self.get_art_module_info_file_data())
+                                    self.get_art_module_info_file_data(sdk))
         else:
             # For rest of the modules, generate an empty .info file.
             self.write_data_to_file(sdk_info_file, "[]")
 
     def build_sdk_scope_targets(self, build_release, sdk_version, modules):
         target_paths = []
+        target_dict = dict()
         for module in modules:
             for sdk in module.sdks:
                 if "host-exports" in sdk or "test-exports" in sdk:
@@ -119,13 +121,16 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                 sdk_info_file = mm.sdk_snapshot_info_file(
                     Path(self.mainline_sdks_dir).joinpath("test"), sdk,
                     sdk_version)
-                self.create_snapshot_info_file(module, sdk_info_file)
-                target_paths.extend(self.latest_api_file_targets(sdk_info_file))
+                self.create_snapshot_info_file(module, sdk_info_file, sdk)
+                paths, dict_item = self.latest_api_file_targets(sdk_info_file)
+                target_paths.extend(paths)
+                target_dict[sdk_info_file] = dict_item
 
         for target_path in target_paths:
             os.makedirs(os.path.split(target_path)[0])
             self.write_data_to_file(target_path, "")
-            # TODO(b/230609867): Add test to verify api diff file generation.
+
+        return target_dict
 
 
 class TestProduceDist(unittest.TestCase):
@@ -195,9 +200,12 @@ class TestProduceDist(unittest.TestCase):
                 "mainline-sdks/for-S-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
                 "mainline-sdks/for-S-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                "mainline-sdks/for-latest-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
             ],
             sorted(self.list_files_in_dir(self.tmp_dist_dir)))
@@ -273,10 +281,20 @@ class TestProduceDist(unittest.TestCase):
                 "bundled-mainline-sdks/platform-mainline/test-exports/platform-mainline-test-exports-current.zip",
                 # Unbundled (normal) modules.
                 "mainline-sdks/for-latest-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
             ],
             sorted(self.list_files_in_dir(self.tmp_dist_dir)))
+
+        art_api_diff_file = os.path.join(
+            self.tmp_dist_dir,
+            "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current-api-diff.txt"
+        )
+        self.assertNotEqual(
+            os.path.getsize(art_api_diff_file),
+            0,
+            msg="Api diff file should not be empty for the art module")
 
     def create_build_number_file(self):
         soong_dir = os.path.join(self.tmp_out_dir, "soong")
