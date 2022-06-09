@@ -85,6 +85,10 @@ class SoongConfigBoilerplateInserter(FileTransformation):
     # The configuration variable that will control the prefer setting.
     configVar: ConfigVar
 
+    # The bp file containing the definitions of the configuration module types
+    # to use in the sdk.
+    configBpDefFile: str
+
     # The prefix to use for the soong config module types.
     configModuleTypePrefix: str
 
@@ -158,13 +162,12 @@ class SoongConfigBoilerplateInserter(FileTransformation):
         }},
     }},""")
 
-                # Add the module type to the list of module types that need to
-                # have corresponding config module types.
-                config_module_types.add(module_type)
-
                 # Change the module type to the corresponding soong config
                 # module type by adding the prefix.
                 module_type = self.configModuleTypePrefix + module_type
+                # Add the module type to the list of module types that need to
+                # be imported into the bp file.
+                config_module_types.add(module_type)
 
             # Generate the module, possibly with the new module type and
             # containing the
@@ -172,23 +175,20 @@ class SoongConfigBoilerplateInserter(FileTransformation):
             content_lines.extend(module_content)
             content_lines.append("}")
 
-        # Add the soong_config_module_type module definitions to the header
-        # lines so that they appear before any uses.
-        header_lines.append("")
-        for module_type in sorted(config_module_types):
-            # Create the corresponding soong config module type name by adding
-            # the prefix.
-            config_module_type = self.configModuleTypePrefix + module_type
-            header_lines.append(f"""
-// Soong config variable module type added by {producer.script}.
-soong_config_module_type {{
-    name: "{config_module_type}",
-    module_type: "{module_type}",
-    config_namespace: "{self.configVar.namespace}",
-    bool_variables: ["{self.configVar.name}"],
-    properties: ["prefer"],
+        # Add the soong_config_module_type_import module definition that imports
+        # the soong config module types into this bp file to the header lines so
+        # that they appear before any uses.
+        module_types = "\n".join(
+            [f'        "{mt}",' for mt in sorted(config_module_types)])
+        header_lines.append(f"""
+// Soong config variable stanza added by {producer.script}.
+soong_config_module_type_import {{
+    from: "{self.configBpDefFile}",
+    module_types: [
+{module_types}
+    ],
 }}
-""".lstrip())
+""")
 
         # Overwrite the file with the updated contents.
         file.seek(0)
@@ -624,6 +624,10 @@ class MainlineModule:
         name="module_build_from_source",
     )
 
+    # The bp file containing the definitions of the configuration module types
+    # to use in the sdk.
+    configBpDefFile: str = "packages/modules/common/Android.bp"
+
     # The prefix to use for the soong config module types.
     configModuleTypePrefix: str = "module_"
 
@@ -640,7 +644,8 @@ class MainlineModule:
             inserter = SoongConfigBoilerplateInserter(
                 "Android.bp",
                 configVar=self.configVar,
-                configModuleTypePrefix=self.configModuleTypePrefix)
+                configModuleTypePrefix=self.configModuleTypePrefix,
+                configBpDefFile=self.configBpDefFile)
             transformations.append(inserter)
         return transformations
 
@@ -685,6 +690,7 @@ MAINLINE_MODULES = [
             namespace="art_module",
             name="source_build",
         ),
+        configBpDefFile="prebuilts/module_sdk/art/SoongConfig.bp",
         configModuleTypePrefix="art_prebuilt_",
     ),
     MainlineModule(
