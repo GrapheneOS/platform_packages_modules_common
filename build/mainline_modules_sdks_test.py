@@ -399,8 +399,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
         """Tests the transformations applied to a common mainline module.
 
         This uses ipsec as an example of a common mainline module. This checks
-        that the correct Soong config module types and variables are used and
-        that it imports the definitions from the correct location.
+        that the general Soong config module types and variables are used.
         """
         src = read_test_data("ipsec_Android.bp.input")
 
@@ -416,7 +415,7 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
         The ART mainline module uses a different Soong config setup to the
         common mainline modules. This checks that the ART specific Soong config
-        module types, variable and imports are used.
+        module types, and variables are used.
         """
         src = read_test_data("art_Android.bp.input")
 
