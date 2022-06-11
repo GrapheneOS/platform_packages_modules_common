@@ -413,6 +413,36 @@ class TestSoongConfigBoilerplateInserter(unittest.TestCase):
 
         self.apply_transformations(src, transformations, expected)
 
+        # Check that Tiramisu provides the same transformations as S.
+        tiramisu_transformations = module.transformations(mm.Tiramisu)
+        self.assertEqual(
+            transformations,
+            tiramisu_transformations,
+            msg="Tiramisu must use the same transformations as S")
+
+    def test_optional_mainline_module(self):
+        """Tests the transformations applied to an optional mainline module.
+
+        This uses wifi as an example of a optional mainline module. This checks
+        that the module specific Soong config module types and variables are
+        used.
+        """
+        src = read_test_data("wifi_Android.bp.input")
+
+        expected = read_test_data("wifi_Android.bp.expected")
+
+        module = MAINLINE_MODULES_BY_APEX["com.android.wifi"]
+        transformations = module.transformations(mm.S)
+
+        self.apply_transformations(src, transformations, expected)
+
+        # Check that Tiramisu provides the same transformations as S.
+        tiramisu_transformations = module.transformations(mm.Tiramisu)
+        self.assertEqual(
+            transformations,
+            tiramisu_transformations,
+            msg="Tiramisu must use the same transformations as S")
+
     def test_art(self):
         """Tests the transformations applied to a the ART mainline module.
 
