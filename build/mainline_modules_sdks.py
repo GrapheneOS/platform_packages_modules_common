@@ -776,6 +776,8 @@ MAINLINE_MODULES = [
         apex="com.android.bluetooth",
         sdks=["bluetooth-module-sdk"],
         first_release=Tiramisu,
+        # Bluetooth has always been and is still optional.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.conscrypt",
@@ -866,6 +868,8 @@ MAINLINE_MODULES = [
         apex="com.android.uwb",
         sdks=["uwb-module-sdk"],
         first_release=Tiramisu,
+        # Uwb has always been and is still optional.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.wifi",
