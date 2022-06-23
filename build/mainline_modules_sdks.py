@@ -842,8 +842,8 @@ MAINLINE_MODULES = [
         configModuleTypePrefix="art_prebuilt_",
     ),
     MainlineModule(
-        apex="com.android.bluetooth",
-        sdks=["bluetooth-module-sdk"],
+        apex="com.android.btservices",
+        sdks=["btservices-module-sdk"],
         first_release=Tiramisu,
         # Bluetooth has always been and is still optional.
         last_optional_release=LATEST,
