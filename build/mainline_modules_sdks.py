@@ -816,6 +816,16 @@ class BundledMainlineModule(MainlineModule):
 # List of mainline modules.
 MAINLINE_MODULES = [
     MainlineModule(
+        apex="com.android.adservices",
+        sdks=["adservices-module-sdk"],
+        first_release=Tiramisu,
+    ),
+    MainlineModule(
+        apex="com.android.appsearch",
+        sdks=["appsearch-sdk"],
+        first_release=Tiramisu,
+    ),
+    MainlineModule(
         apex="com.android.art",
         sdks=[
             "art-module-sdk",
@@ -830,6 +840,13 @@ MAINLINE_MODULES = [
         ),
         configBpDefFile="prebuilts/module_sdk/art/SoongConfig.bp",
         configModuleTypePrefix="art_prebuilt_",
+    ),
+    MainlineModule(
+        apex="com.android.btservices",
+        sdks=["btservices-module-sdk"],
+        first_release=Tiramisu,
+        # Bluetooth has always been and is still optional.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.conscrypt",
@@ -872,6 +889,11 @@ MAINLINE_MODULES = [
         ]),
     ),
     MainlineModule(
+        apex="com.android.ondevicepersonalization",
+        sdks=["ondevicepersonalization-module-sdk"],
+        first_release=Tiramisu,
+    ),
+    MainlineModule(
         apex="com.android.permission",
         sdks=["permission-module-sdk"],
         first_release=R,
@@ -910,6 +932,13 @@ MAINLINE_MODULES = [
         for_r_build=ForRBuild(sdk_libraries=[
             SdkLibrary(name="framework-tethering"),
         ]),
+    ),
+    MainlineModule(
+        apex="com.android.uwb",
+        sdks=["uwb-module-sdk"],
+        first_release=Tiramisu,
+        # Uwb has always been and is still optional.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.wifi",
