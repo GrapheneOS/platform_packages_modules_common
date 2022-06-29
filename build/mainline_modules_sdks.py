@@ -417,10 +417,7 @@ java_sdk_library_import {{
 
     @staticmethod
     def does_sdk_library_support_latest_api(sdk_library):
-        # TODO(b/235330409): remove service art from the exception list once
-        # this bug is fixed.
-        if sdk_library == "service-art" or \
-            sdk_library == "conscrypt.module.platform.api":
+        if sdk_library == "conscrypt.module.platform.api":
             return False
         return True
 
