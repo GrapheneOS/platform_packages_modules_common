@@ -239,6 +239,9 @@ library_linking_strategy_apex_defaults {
 apex_defaults {
     name: "s-launched-apex-module",
     min_sdk_version: "31",
+    // Indicates that pre-installed version of this apex can be compressed.
+    // Whether it actually will be compressed is controlled on per-device basis.
+    compressible:true,
     updatable: true,
     defaults_visibility: [
         "//art:__subpackages__",
@@ -250,5 +253,8 @@ apex_defaults {
     name: "t-launched-apex-module",
     min_sdk_version: "Tiramisu",
     updatable: true,
+    // Indicates that pre-installed version of this apex can be compressed.
+    // Whether it actually will be compressed is controlled on per-device basis.
+    compressible:true,
     defaults_visibility: ["//packages/modules:__subpackages__"],
 }
