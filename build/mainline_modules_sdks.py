@@ -739,6 +739,19 @@ class MainlineModule:
     #
     # This field records the last build release in which they are optional. It
     # defaults to None which indicates that the module was never optional.
+    #
+    # TODO(b/238203992): remove the following warning once all modules can be
+    #  treated as optional at build time.
+    #
+    # DO NOT use this attr for anything other than controlling whether the
+    # generated snapshot uses its own Soong config variable or the common one.
+    # That is because this is being temporarily used to force Permission to have
+    # its own Soong config variable even though Permission is not actually
+    # optional at runtime on a GMS capable device.
+    #
+    # b/238203992 will make all modules have their own Soong config variable by
+    # default at which point this will no longer be needed on Permission and so
+    # it can be used to indicate that a module is optional at runtime.
     last_optional_release: typing.Optional[BuildRelease] = None
 
     # The short name for the module.
@@ -881,6 +894,11 @@ MAINLINE_MODULES = [
             # that are provided in R by non-updatable parts of the
             # bootclasspath.
         ]),
+        # Although Permission is not, and has never been, optional for GMS
+        # capable devices it does need to be treated as optional at build time
+        # when building non-GMS devices.
+        # TODO(b/238203992): remove once all modules are optional at build time.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.scheduling",
