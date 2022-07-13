@@ -38,3 +38,23 @@ java_defaults {
         proguard_flags_files: [":framework-system-server-module-optimize-proguard-rules"],
     },
 }
+
+// Needed because otherwise java_defaults would resolve it in module directory.
+filegroup {
+    name: "standalone-system-server-module-optimize-proguard-rules",
+    srcs: [
+        "system-server.pro",
+    ],
+}
+
+java_defaults {
+    name: "standalone-system-server-module-optimize-defaults",
+    optimize: {
+        enabled: true,
+        shrink: true,
+        optimize: false,
+        obfuscate: false,
+        proguard_compatibility: false,
+        proguard_flags_files: [":standalone-system-server-module-optimize-proguard-rules"],
+    },
+}
