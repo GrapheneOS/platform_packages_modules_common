@@ -16,7 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
     default_visibility: [
         ":__subpackages__",
-        "//packages/modules/Permission:__subpackages__",
+        "//packages/modules:__subpackages__",
     ],
 }
 
