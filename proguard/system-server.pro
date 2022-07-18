@@ -1,1 +1,1 @@
--keep class * extends com.android.server.SystemService
+-keep class * extends com.android.server.SystemService { *; }
