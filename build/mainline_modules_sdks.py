@@ -20,6 +20,7 @@ the APEXes in it are built, otherwise all configured SDKs are built.
 """
 import argparse
 import dataclasses
+import datetime
 import functools
 import io
 import json
@@ -255,6 +256,22 @@ def sdk_snapshot_api_diff_file(snapshots_dir, sdk_name, sdk_version):
     return os.path.join(snapshots_dir, f"{sdk_name}-{sdk_version}-api-diff.txt")
 
 
+# The default time to use in zip entries. Ideally, this should be the same as is
+# used by soong_zip and ziptime but there is no strict need for that to be the
+# case. What matters is this is a fixed time so that the contents of zip files
+# created by this script do not depend on when it is run, only the inputs.
+default_zip_time = datetime.datetime(2008, 1, 1, 0, 0, 0, 0,
+                                     datetime.timezone.utc)
+
+
+# set the timestamps of the paths to the default_zip_time.
+def set_default_timestamp(base_dir, paths):
+    for path in paths:
+        timestamp = default_zip_time.timestamp()
+        p = os.path.join(base_dir, path)
+        os.utime(p, (timestamp, timestamp))
+
+
 @dataclasses.dataclass()
 class SnapshotBuilder:
     """Builds sdk snapshots"""
@@ -408,6 +425,13 @@ java_sdk_library_import {{
                 snapshot_build_number_file = os.path.join(
                     dest_dir, "snapshot-creation-build-number.txt")
                 shutil.copy(build_number_file, snapshot_build_number_file)
+
+            # Make sure that all the paths being added to the zip file have a
+            # fixed timestamp so that the contents of the zip file do not depend
+            # on when this script is run, only the inputs.
+            for root, dirs, files in os.walk(dest_dir):
+                set_default_timestamp(root, dirs)
+                set_default_timestamp(root, files)
 
             # Now zip up the files into a snapshot zip file.
             base_file = os.path.join(r_snapshot_dir, sdk_name + "-current")
@@ -1230,6 +1254,12 @@ def copy_zip_and_replace(producer, src_zip_path, dest_zip_path, src_dir, paths):
     # not affected by a change of directory.
     abs_src_zip_path = os.path.abspath(src_zip_path)
     abs_dest_zip_path = os.path.abspath(dest_zip_path)
+
+    # Make sure that all the paths being added to the zip file have a fixed
+    # timestamp so that the contents of the zip file do not depend on when this
+    # script is run, only the inputs.
+    set_default_timestamp(src_dir, paths)
+
     producer.subprocess_runner.run(
         ["zip", "-q", abs_src_zip_path, "--out", abs_dest_zip_path] + paths,
         # Change into the source directory before running zip.
