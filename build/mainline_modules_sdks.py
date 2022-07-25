@@ -447,11 +447,11 @@ java_sdk_library_import {{
 
     def latest_api_file_targets(self, sdk_info_file):
         # Read the sdk info file and fetch the latest scope targets.
-        with open(sdk_info_file, "r") as sdk_info_file_object:
+        with open(sdk_info_file, "r", encoding="utf8") as sdk_info_file_object:
             sdk_info_file_json = json.loads(sdk_info_file_object.read())
 
         target_paths = []
-        target_dict = dict()
+        target_dict = {}
         for jsonItem in sdk_info_file_json:
             if not jsonItem["@type"] == "java_sdk_library":
                 continue
@@ -460,10 +460,10 @@ java_sdk_library_import {{
             if not self.does_sdk_library_support_latest_api(sdk_library):
                 continue
 
-            target_dict[sdk_library] = dict()
+            target_dict[sdk_library] = {}
             for scope in jsonItem["scopes"]:
                 scope_json = jsonItem["scopes"][scope]
-                target_dict[sdk_library][scope] = dict()
+                target_dict[sdk_library][scope] = {}
                 target_list = [
                     "current_api", "latest_api", "removed_api",
                     "latest_removed_api"
@@ -479,7 +479,7 @@ java_sdk_library_import {{
         # Build the latest scope targets for each module sdk
         # Compute the paths to all the latest scope targets for each module sdk.
         target_paths = []
-        target_dict = dict()
+        target_dict = {}
         for module in modules:
             for sdk in module.sdks:
                 if "host-exports" in sdk or "test-exports" in sdk:
@@ -499,6 +499,11 @@ java_sdk_library_import {{
         with zipfile.ZipFile(sdk_zip_file, "r") as zipObj:
             extracted_current_api = zipObj.extract(
                 member=current_api, path=snapshots_dir)
+            # The diff tool has an exit code of 0, 1 or 2 depending on whether
+            # it find no differences, some differences or an error (like missing
+            # file). As 0 or 1 are both valid results this cannot use check=True
+            # so disable the pylint check.
+            # pylint: disable=subprocess-run-check
             diff = subprocess.run(
                 ["diff", "-u0", latest_api, extracted_current_api],
                 capture_output=True).stdout.decode("utf-8")
@@ -516,7 +521,9 @@ java_sdk_library_import {{
         sdk_zip_file = sdk_snapshot_zip_file(snapshots_dir, sdk, sdk_version)
         sdk_api_diff_file = sdk_snapshot_api_diff_file(snapshots_dir, sdk,
                                                        sdk_version)
-        with open(sdk_api_diff_file, "w") as sdk_api_diff_file_object:
+        with open(
+                sdk_api_diff_file, "w",
+                encoding="utf8") as sdk_api_diff_file_object:
             for sdk_library in target_dict[sdk_info_file]:
                 for scope in target_dict[sdk_info_file][sdk_library]:
                     scope_json = target_dict[sdk_info_file][sdk_library][scope]
