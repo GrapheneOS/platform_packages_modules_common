@@ -533,7 +533,8 @@ java_sdk_library_import {{
         target_dict = {}
         for module in modules:
             for sdk in module.sdks:
-                if "host-exports" in sdk or "test-exports" in sdk:
+                sdk_type = sdk_type_from_name(sdk)
+                if not sdk_type.providesApis:
                     continue
 
                 sdk_info_file = sdk_snapshot_info_file(self.mainline_sdks_dir,
@@ -595,7 +596,8 @@ java_sdk_library_import {{
         """For each module sdk, create the api diff file."""
         for module in modules:
             for sdk in module.sdks:
-                if "host-exports" in sdk or "test-exports" in sdk:
+                sdk_type = sdk_type_from_name(sdk)
+                if not sdk_type.providesApis:
                     continue
                 self.create_snapshot_api_diff(sdk, sdk_version, target_dict,
                                               snapshots_dir)
@@ -1218,7 +1220,8 @@ class SdkDistProducer:
     def dist_sdk_snapshot_api_diff(self, sdk_dist_dir, sdk, sdk_version, module,
                                    snapshots_dir):
         """Copy the sdk snapshot api diff file to a dist directory."""
-        if "host-exports" in sdk or "test-exports" in sdk:
+        sdk_type = sdk_type_from_name(sdk)
+        if not sdk_type.providesApis:
             return
 
         sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, "sdk")
@@ -1254,10 +1257,8 @@ class SdkDistProducer:
 
     def populate_dist_snapshot(self, build_release, module, sdk, sdk_dist_dir,
                                sdk_version, snapshots_dir):
-        subdir = re.sub("^.+-(sdk|(host|test)-exports)$", r"\1", sdk)
-        if subdir not in ("sdk", "host-exports", "test-exports"):
-            raise Exception(f"{sdk} is not a valid name, expected it to end"
-                            f" with -(sdk|host-exports|test-exports)")
+        sdk_type = sdk_type_from_name(sdk)
+        subdir = sdk_type.name
 
         sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, subdir)
         sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk, sdk_version)
@@ -1402,6 +1403,33 @@ def aosp_to_google_name(name):
 def google_to_aosp_name(name):
     """Transform a Google module name into an AOSP module name"""
     return name.replace("com.google.android.", "com.android.")
+
+
+@dataclasses.dataclass(frozen=True)
+class SdkType:
+    name: str
+
+    providesApis: bool = False
+
+
+Sdk = SdkType(
+    name="sdk",
+    providesApis=True,
+)
+HostExports = SdkType(name="host-exports")
+TestExports = SdkType(name="test-exports")
+
+
+def sdk_type_from_name(name):
+    if name.endswith("-sdk"):
+        return Sdk
+    if name.endswith("-host-exports"):
+        return HostExports
+    if name.endswith("-test-exports"):
+        return TestExports
+
+    raise Exception(f"{name} is not a valid sdk name, expected it to end"
+                    f" with -(sdk|host-exports|test-exports)")
 
 
 def filter_modules(modules, target_build_apps):
