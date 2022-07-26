@@ -99,8 +99,8 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
 
     @staticmethod
     def write_data_to_file(file, data):
-        with open(file, "w") as file:
-            file.write(data)
+        with open(file, "w", encoding="utf8") as fd:
+            fd.write(data)
 
     def create_snapshot_info_file(self, module, sdk_info_file, sdk):
         if module == MAINLINE_MODULES_BY_APEX["com.android.art"]:
@@ -112,7 +112,7 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
 
     def build_sdk_scope_targets(self, build_release, sdk_version, modules):
         target_paths = []
-        target_dict = dict()
+        target_dict = {}
         for module in modules:
             for sdk in module.sdks:
                 if "host-exports" in sdk or "test-exports" in sdk:
