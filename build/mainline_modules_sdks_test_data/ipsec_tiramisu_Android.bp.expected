@@ -1,28 +1,17 @@
 // This is auto-generated. DO NOT EDIT.
 
-// Soong config variable stanza added by test_common_mainline_module.
-soong_config_module_type_import {
-    from: "packages/modules/common/Android.bp",
-    module_types: [
-        "module_java_sdk_library_import",
-        "module_prebuilt_bootclasspath_fragment",
-    ],
-}
-
 package {
     // A default list here prevents the license LSC from adding its own list which would
     // be unnecessary as every module in the sdk already has its own licenses property.
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-module_prebuilt_bootclasspath_fragment {
+prebuilt_bootclasspath_fragment {
     name: "com.android.ipsec-bootclasspath-fragment",
     // Do not prefer prebuilt if the Soong config variable "module_build_from_source" in namespace "ANDROID" is true.
-    prefer: true,
-    soong_config_variables: {
-        module_build_from_source: {
-            prefer: false,
-        },
+    use_source_config_var: {
+        config_namespace: "ANDROID",
+        var_name: "module_build_from_source",
     },
     visibility: ["//visibility:public"],
     apex_available: ["com.android.ipsec"],
@@ -37,14 +26,12 @@ module_prebuilt_bootclasspath_fragment {
     },
 }
 
-module_java_sdk_library_import {
+java_sdk_library_import {
     name: "android.net.ipsec.ike",
     // Do not prefer prebuilt if the Soong config variable "module_build_from_source" in namespace "ANDROID" is true.
-    prefer: true,
-    soong_config_variables: {
-        module_build_from_source: {
-            prefer: false,
-        },
+    use_source_config_var: {
+        config_namespace: "ANDROID",
+        var_name: "module_build_from_source",
     },
     visibility: ["//visibility:public"],
     apex_available: [
