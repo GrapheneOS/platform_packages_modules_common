@@ -1,12 +1,21 @@
 // This is auto-generated. DO NOT EDIT.
 
-// Soong config variable stanza added by test_common_mainline_module.
-soong_config_module_type_import {
-    from: "packages/modules/common/Android.bp",
-    module_types: [
-        "module_java_sdk_library_import",
-        "module_prebuilt_bootclasspath_fragment",
-    ],
+// Soong config variable module type added by test_common_mainline_module.
+soong_config_module_type {
+    name: "ipsec_prebuilt_java_sdk_library_import",
+    module_type: "java_sdk_library_import",
+    config_namespace: "ANDROID",
+    bool_variables: ["module_build_from_source"],
+    properties: ["prefer"],
+}
+
+// Soong config variable module type added by test_common_mainline_module.
+soong_config_module_type {
+    name: "ipsec_prebuilt_prebuilt_bootclasspath_fragment",
+    module_type: "prebuilt_bootclasspath_fragment",
+    config_namespace: "ANDROID",
+    bool_variables: ["module_build_from_source"],
+    properties: ["prefer"],
 }
 
 package {
@@ -15,7 +24,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-module_prebuilt_bootclasspath_fragment {
+ipsec_prebuilt_prebuilt_bootclasspath_fragment {
     name: "com.android.ipsec-bootclasspath-fragment",
     // Do not prefer prebuilt if the Soong config variable "module_build_from_source" in namespace "ANDROID" is true.
     prefer: true,
@@ -37,7 +46,7 @@ module_prebuilt_bootclasspath_fragment {
     },
 }
 
-module_java_sdk_library_import {
+ipsec_prebuilt_java_sdk_library_import {
     name: "android.net.ipsec.ike",
     // Do not prefer prebuilt if the Soong config variable "module_build_from_source" in namespace "ANDROID" is true.
     prefer: true,
