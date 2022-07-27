@@ -417,15 +417,14 @@ class TestAndroidBpTransformations(unittest.TestCase):
         """Tests the transformations applied to a common mainline sdk on S.
 
         This uses ipsec as an example of a common mainline sdk. This checks
-        that the correct Soong config module types and variables are used and
-        that it imports the definitions from the correct location.
+        that the general Soong config module types and variables are used.
         """
         src = read_test_data("ipsec_Android.bp.input")
 
         expected = read_test_data("ipsec_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
-        transformations = module.transformations(mm.S)
+        transformations = module.transformations(mm.S, mm.Sdk)
 
         self.apply_transformations(src, transformations, expected)
 
@@ -440,7 +439,7 @@ class TestAndroidBpTransformations(unittest.TestCase):
         expected = read_test_data("ipsec_tiramisu_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
-        transformations = module.transformations(mm.Tiramisu)
+        transformations = module.transformations(mm.Tiramisu, mm.Sdk)
 
         self.apply_transformations(src, transformations, expected)
 
@@ -456,7 +455,7 @@ class TestAndroidBpTransformations(unittest.TestCase):
         expected = read_test_data("wifi_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.wifi"]
-        transformations = module.transformations(mm.S)
+        transformations = module.transformations(mm.S, mm.Sdk)
 
         self.apply_transformations(src, transformations, expected)
 
@@ -471,7 +470,7 @@ class TestAndroidBpTransformations(unittest.TestCase):
         expected = read_test_data("wifi_tiramisu_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.wifi"]
-        transformations = module.transformations(mm.Tiramisu)
+        transformations = module.transformations(mm.Tiramisu, mm.Sdk)
 
         self.apply_transformations(src, transformations, expected)
 
@@ -480,14 +479,30 @@ class TestAndroidBpTransformations(unittest.TestCase):
 
         The ART mainline module uses a different Soong config setup to the
         common mainline modules. This checks that the ART specific Soong config
-        module types, variable and imports are used.
+        module types, and variables are used.
         """
         src = read_test_data("art_Android.bp.input")
 
         expected = read_test_data("art_Android.bp.expected")
 
         module = MAINLINE_MODULES_BY_APEX["com.android.art"]
-        transformations = module.transformations(mm.S)
+        transformations = module.transformations(mm.S, mm.Sdk)
+
+        self.apply_transformations(src, transformations, expected)
+
+    def test_art_module_exports(self):
+        """Tests the transformations applied to a the ART mainline module.
+
+        The ART mainline module uses a different Soong config setup to the
+        common mainline modules. This checks that the ART specific Soong config
+        module types, and variables are used.
+        """
+        src = read_test_data("art_Android.bp.input")
+
+        expected = read_test_data("art_host_exports_Android.bp.expected")
+
+        module = MAINLINE_MODULES_BY_APEX["com.android.art"]
+        transformations = module.transformations(mm.S, mm.HostExports)
 
         self.apply_transformations(src, transformations, expected)
 
@@ -505,7 +520,7 @@ class TestAndroidBpTransformations(unittest.TestCase):
         expected = src
 
         module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
-        transformations = module.transformations(mm.R)
+        transformations = module.transformations(mm.R, mm.Sdk)
 
         self.apply_transformations(src, transformations, expected)
 
