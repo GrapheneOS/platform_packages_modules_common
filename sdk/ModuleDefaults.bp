@@ -102,7 +102,6 @@ java_defaults {
     // Hide impl library and stub sources
     impl_library_visibility: [
         ":__pkg__",
-        "//frameworks/base", // For framework-all
         "//frameworks/base/api", // For framework-all
     ],
     stubs_source_visibility: ["//visibility:private"],
