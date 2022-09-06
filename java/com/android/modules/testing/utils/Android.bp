@@ -19,7 +19,7 @@ package {
 }
 
 java_library_host {
-    name: "com.android.modules.testing.utils",
+    name: "ApexInstallHelper",
     visibility: ["//visibility:public"],
     srcs: [
         "ApexInstallHelper.java"
