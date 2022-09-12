@@ -1124,9 +1124,7 @@ class SdkDistProducer:
                                                       "bundled-mainline-sdks")
 
     def prepare(self):
-        # Clear the sdk dist directories.
-        shutil.rmtree(self.mainline_sdks_dir, ignore_errors=True)
-        shutil.rmtree(self.bundled_mainline_sdks_dir, ignore_errors=True)
+        pass
 
     def produce_dist(self, modules, build_releases):
         # Prepare the dist directory for the sdks.
