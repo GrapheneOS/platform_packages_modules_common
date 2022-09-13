@@ -55,6 +55,7 @@ java_defaults {
         optimize: false,
         obfuscate: false,
         proguard_compatibility: false,
+        ignore_warnings: false,
         proguard_flags_files: [":standalone-system-server-module-optimize-proguard-rules"],
     },
 }
