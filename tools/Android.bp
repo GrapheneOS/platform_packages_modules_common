@@ -21,11 +21,7 @@ package {
 python_defaults {
     name: "modules-common-tools-python-defaults",
     version: {
-        py2: {
-            enabled: false,
-        },
         py3: {
-            enabled: true,
             embedded_launcher: true,
         },
     },
