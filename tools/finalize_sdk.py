@@ -4,6 +4,7 @@ import argparse
 import glob
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -76,20 +77,20 @@ def dir_for_sdk(filename, version):
         return os.path.join(base, 'host-exports')
     return base
 
-def is_txt_ignored(txt_file):
+def is_ignored(file):
     # Conscrypt has some legacy API tracking files that we don't consider for extensions.
     bad_stem_prefixes = ['conscrypt.module.intra.core.api', 'conscrypt.module.platform.api']
-    return any([txt_file.stem.startswith(p) for p in bad_stem_prefixes])
+    return any([file.stem.startswith(p) for p in bad_stem_prefixes])
 
 
-def maybe_tweak_compat_txt_stem(txt_file):
+def maybe_tweak_compat_stem(file):
     # For legacy reasons, art and conscrypt txt file names in the SDKs (*.module.public.api)
     # do not match their expected filename in prebuilts/sdk (art, conscrypt). So rename them
     # to match.
-    new_stem = txt_file.stem
+    new_stem = file.stem
     new_stem = new_stem.replace('art.module.public.api', 'art')
     new_stem = new_stem.replace('conscrypt.module.public.api', 'conscrypt')
-    return txt_file.with_stem(new_stem)
+    return file.with_stem(new_stem)
 
 if not os.path.isdir('build/soong'):
     fail("This script must be run from the top of an Android source tree.")
@@ -105,7 +106,7 @@ args = parser.parse_args()
 
 build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTINUOUS
 branch_name = 'finalize-%d' % args.finalize_sdk
-cmdline = " ".join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
+cmdline = shlex.join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
 module_names = args.modules or ['*']
 
@@ -134,15 +135,15 @@ for m in module_names:
         created_dirs[repo].add(dir)
 
         # Copy api txt files to compat tracking dir
-        txt_files = [Path(p) for p in glob.glob(os.path.join(target_dir, 'sdk_library/*/*.txt'))]
-        for txt_file in txt_files:
-            if is_txt_ignored(txt_file):
+        src_files = [Path(p) for p in glob.glob(os.path.join(target_dir, 'sdk_library/*/*.txt')) + glob.glob(os.path.join(target_dir, 'sdk_library/*/*.jar'))]
+        for src_file in src_files:
+            if is_ignored(src_file):
                 continue
-            api_type = txt_file.parts[-2]
-            dest_dir = compat_dir.joinpath(api_type, 'api')
-            dest_file = maybe_tweak_compat_txt_stem(dest_dir.joinpath(txt_file.name))
+            api_type = src_file.parts[-2]
+            dest_dir = compat_dir.joinpath(api_type, 'api') if src_file.suffix == '.txt' else compat_dir.joinpath(api_type)
+            dest_file = maybe_tweak_compat_stem(dest_dir.joinpath(src_file.name))
             os.makedirs(dest_dir, exist_ok = True)
-            shutil.copy(txt_file, dest_file)
+            shutil.copy(src_file, dest_file)
             created_dirs[COMPAT_REPO].add(dest_dir.relative_to(COMPAT_REPO))
 
 subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
