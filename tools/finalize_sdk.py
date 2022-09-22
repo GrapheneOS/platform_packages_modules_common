@@ -4,6 +4,7 @@ import argparse
 import glob
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -105,7 +106,7 @@ args = parser.parse_args()
 
 build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTINUOUS
 branch_name = 'finalize-%d' % args.finalize_sdk
-cmdline = " ".join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
+cmdline = shlex.join([x for x in sys.argv if x not in ['-a', '--amend_last_commit']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
 module_names = args.modules or ['*']
 
