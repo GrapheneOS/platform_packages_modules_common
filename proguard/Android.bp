@@ -16,6 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
     default_visibility: [
         ":__subpackages__",
+        "//art/libartservice:__subpackages__",
         "//packages/modules:__subpackages__",
     ],
 }
