@@ -25,6 +25,7 @@ filegroup {
     name: "framework-system-server-module-optimize-proguard-rules",
     srcs: [
         "system-api.pro",
+        "system-server.pro",
     ],
 }
 
