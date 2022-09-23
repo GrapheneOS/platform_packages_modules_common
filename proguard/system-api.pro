@@ -11,5 +11,3 @@
 -keepclasseswithmembers public class * {
     @android.annotation.SystemApi public protected <methods>;
 }
-
--include system-server.pro
