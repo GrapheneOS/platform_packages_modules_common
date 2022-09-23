@@ -90,6 +90,11 @@ def maybe_tweak_compat_stem(file):
     new_stem = file.stem
     new_stem = new_stem.replace('art.module.public.api', 'art')
     new_stem = new_stem.replace('conscrypt.module.public.api', 'conscrypt')
+
+    # The stub jar artifacts from official builds are named '*-stubs.jar', but
+    # the convention for the copies in prebuilts/sdk is just '*.jar'. Fix that.
+    new_stem = new_stem.replace('-stubs', '')
+
     return file.with_stem(new_stem)
 
 if not os.path.isdir('build/soong'):
