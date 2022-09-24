@@ -16,6 +16,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
     default_visibility: [
         ":__subpackages__",
+        "//art/libartservice:__subpackages__",
         "//packages/modules:__subpackages__",
     ],
 }
@@ -25,6 +26,7 @@ filegroup {
     name: "framework-system-server-module-optimize-proguard-rules",
     srcs: [
         "system-api.pro",
+        "system-server.pro",
     ],
 }
 
@@ -35,6 +37,8 @@ java_defaults {
         shrink: true,
         optimize: false,
         obfuscate: false,
+        proguard_compatibility: false,
+        ignore_warnings: false,
         proguard_flags_files: [":framework-system-server-module-optimize-proguard-rules"],
     },
 }
