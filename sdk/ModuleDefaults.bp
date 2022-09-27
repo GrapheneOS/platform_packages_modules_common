@@ -206,13 +206,6 @@ apex_defaults {
     defaults_visibility: ["//visibility:public"],
 }
 
-apex_defaults {
-    name: "r-launched-apex-module",
-    min_sdk_version: "30",
-    updatable: true,
-    defaults_visibility: ["//visibility:public"],
-}
-
 DCLA_MIN_SDK_VERSION = "31"
 
 soong_config_module_type_import {
@@ -221,8 +214,38 @@ soong_config_module_type_import {
 }
 
 library_linking_strategy_apex_defaults {
+    name: "q-launched-dcla-enabled-apex-module",
+    defaults_visibility: [
+         "//external/conscrypt/apex",
+         "//packages/modules/DnsResolver/apex",
+         "//frameworks/av/apex"
+    ],
+    defaults: ["q-launched-apex-module"],
+    soong_config_variables: {
+        library_linking_strategy: {
+            // Use the Q min_sdk_version
+            prefer_static: {},
+            // Override the Q min_sdk_version to min_sdk_version that supports dcla
+            conditions_default: {
+                min_sdk_version: DCLA_MIN_SDK_VERSION,
+            },
+        },
+    },
+}
+
+apex_defaults {
+    name: "r-launched-apex-module",
+    min_sdk_version: "30",
+    updatable: true,
+    defaults_visibility: ["//visibility:public"],
+}
+
+library_linking_strategy_apex_defaults {
     name: "r-launched-dcla-enabled-apex-module",
-    defaults_visibility: ["//packages/modules/adb:__subpackages__"],
+    defaults_visibility: [
+         "//packages/modules/adb:__subpackages__",
+         "//packages/modules/Connectivity/Tethering/apex",
+    ],
     defaults: ["r-launched-apex-module"],
     soong_config_variables: {
         library_linking_strategy: {
