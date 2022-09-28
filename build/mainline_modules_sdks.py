@@ -738,9 +738,8 @@ Tiramisu = BuildRelease(
     name="Tiramisu",
     # Generate a snapshot for Tiramisu using Soong.
     creator=create_sdk_snapshots_in_soong,
-    # This requires the SoongConfigBoilerplateInserter transformation to be
-    # applied due to b/249192297.
-    preferHandling=PreferHandling.SOONG_CONFIG,
+    # This supports the use_source_config_var property.
+    preferHandling=PreferHandling.USE_SOURCE_CONFIG_VAR_PROPERTY,
 )
 
 # Insert additional BuildRelease definitions for following releases here,
