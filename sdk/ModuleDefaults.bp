@@ -278,6 +278,17 @@ apex_defaults {
     updatable: true,
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
-    compressible:true,
+    compressible: true,
+    defaults_visibility: ["//packages/modules:__subpackages__"],
+}
+
+
+apex_defaults {
+    name: "u-launched-apex-module",
+    min_sdk_version: "UpsideDownCake",
+    updatable: true,
+    // Indicates that pre-installed version of this apex can be compressed.
+    // Whether it actually will be compressed is controlled on per-device basis.
+    compressible: true,
     defaults_visibility: ["//packages/modules:__subpackages__"],
 }
