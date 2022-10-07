@@ -963,6 +963,11 @@ MAINLINE_MODULES = [
         for_r_build=None,
     ),
     MainlineModule(
+        apex="com.android.healthconnect",
+        sdks=["healthconnect-module-sdk"],
+        first_release=LATEST,
+    ),
+    MainlineModule(
         apex="com.android.ipsec",
         sdks=["ipsec-module-sdk"],
         first_release=R,
