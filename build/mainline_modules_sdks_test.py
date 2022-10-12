@@ -177,6 +177,7 @@ class TestProduceDist(unittest.TestCase):
         modules = [
             MAINLINE_MODULES_BY_APEX["com.android.art"],
             MAINLINE_MODULES_BY_APEX["com.android.ipsec"],
+            MAINLINE_MODULES_BY_APEX["com.android.tethering"],
             # Create a google specific module.
             mm.aosp_to_google(MAINLINE_MODULES_BY_APEX["com.android.wifi"]),
         ]
@@ -193,11 +194,13 @@ class TestProduceDist(unittest.TestCase):
             [
                 # Build specific snapshots.
                 "mainline-sdks/for-R-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                "mainline-sdks/for-R-build/current/com.android.tethering/sdk/tethering-module-sdk-current.zip",
                 "mainline-sdks/for-R-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
                 "mainline-sdks/for-S-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
                 "mainline-sdks/for-S-build/current/com.android.art/sdk/art-module-sdk-current.zip",
                 "mainline-sdks/for-S-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
                 "mainline-sdks/for-S-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                "mainline-sdks/for-S-build/current/com.android.tethering/sdk/tethering-module-sdk-current.zip",
                 "mainline-sdks/for-S-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current-api-diff.txt",
@@ -205,6 +208,8 @@ class TestProduceDist(unittest.TestCase):
                 "mainline-sdks/for-latest-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.tethering/sdk/tethering-module-sdk-current-api-diff.txt",
+                "mainline-sdks/for-latest-build/current/com.android.tethering/sdk/tethering-module-sdk-current.zip",
                 "mainline-sdks/for-latest-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
             ],
@@ -213,6 +218,7 @@ class TestProduceDist(unittest.TestCase):
         r_snaphot_dir = os.path.join(self.tmp_out_dir,
                                      "soong/mainline-sdks/test/for-R-build")
         aosp_ipsec_r_bp_file = "com.android.ipsec/sdk_library/Android.bp"
+        aosp_tethering_r_bp_file = "com.android.tethering/sdk_library/Android.bp"
         google_wifi_android_bp = "com.google.android.wifi/sdk_library/Android.bp"
         self.assertEqual([
             aosp_ipsec_r_bp_file,
@@ -221,6 +227,12 @@ class TestProduceDist(unittest.TestCase):
             "com.android.ipsec/sdk_library/public/android.net.ipsec.ike.srcjar",
             "com.android.ipsec/sdk_library/public/android.net.ipsec.ike.txt",
             "com.android.ipsec/snapshot-creation-build-number.txt",
+            aosp_tethering_r_bp_file,
+            "com.android.tethering/sdk_library/public/framework-tethering-removed.txt",
+            "com.android.tethering/sdk_library/public/framework-tethering-stubs.jar",
+            "com.android.tethering/sdk_library/public/framework-tethering.srcjar",
+            "com.android.tethering/sdk_library/public/framework-tethering.txt",
+            "com.android.tethering/snapshot-creation-build-number.txt",
             google_wifi_android_bp,
             "com.google.android.wifi/sdk_library/public/framework-wifi-removed.txt",
             "com.google.android.wifi/sdk_library/public/framework-wifi-stubs.jar",
@@ -228,6 +240,7 @@ class TestProduceDist(unittest.TestCase):
             "com.google.android.wifi/sdk_library/public/framework-wifi.txt",
             "com.google.android.wifi/snapshot-creation-build-number.txt",
             "ipsec-module-sdk-current.zip",
+            "tethering-module-sdk-current.zip",
             "wifi-module-sdk-current.zip",
         ], sorted(self.list_files_in_dir(r_snaphot_dir)))
 
@@ -240,6 +253,11 @@ class TestProduceDist(unittest.TestCase):
         ipsec_contents = read_r_snapshot_contents(aosp_ipsec_r_bp_file)
         expected = read_test_data("ipsec_for_r_Android.bp")
         self.assertEqual(expected, ipsec_contents)
+
+        # Check the contents of the AOSP tethering module
+        tethering_contents = read_r_snapshot_contents(aosp_tethering_r_bp_file)
+        expected = read_test_data("tethering_for_r_Android.bp")
+        self.assertEqual(expected, tethering_contents)
 
         # Check the contents of the Google ipsec module
         wifi_contents = read_r_snapshot_contents(google_wifi_android_bp)
