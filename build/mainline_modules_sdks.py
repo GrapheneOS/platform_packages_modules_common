@@ -422,6 +422,11 @@ class SnapshotBuilder:
                             scope_pattern=r"(public|system|module-lib)",
                             name_pattern=fr"({module_name}(-removed|-stubs)?)"))
 
+                    available_apexes = [f'"{aosp_apex}"']
+                    if aosp_apex != "com.android.tethering":
+                        available_apexes.append(f'"test_{aosp_apex}"')
+                    apex_available = ",\n        ".join(available_apexes)
+
                     bp.write(f"""
 java_sdk_library_import {{
     name: "{module_name}",
@@ -429,8 +434,7 @@ java_sdk_library_import {{
     prefer: true,
     shared_library: {shared_library},
     apex_available: [
-        "{aosp_apex}",
-        "test_{aosp_apex}",
+        {apex_available},
     ],
     public: {{
         jars: ["public/{module_name}-stubs.jar"],
