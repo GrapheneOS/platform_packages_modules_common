@@ -303,6 +303,11 @@ def set_default_timestamp(base_dir, paths):
         p = os.path.join(base_dir, path)
         os.utime(p, (timestamp, timestamp))
 
+# set the timestamp of the file path to default_zip_time.
+def set_default_timestamp_to_file(file_path):
+    timestamp = default_zip_time.timestamp()
+    os.utime(file_path, (timestamp, timestamp))
+
 
 @dataclasses.dataclass()
 class SnapshotBuilder:
@@ -536,6 +541,8 @@ java_sdk_library_import {{
         with zipfile.ZipFile(sdk_zip_file, "r") as zipObj:
             extracted_current_api = zipObj.extract(
                 member=current_api, path=snapshots_dir)
+            set_default_timestamp_to_file(extracted_current_api)
+            set_default_timestamp_to_file(latest_api)
             # The diff tool has an exit code of 0, 1 or 2 depending on whether
             # it find no differences, some differences or an error (like missing
             # file). As 0 or 1 are both valid results this cannot use check=True
