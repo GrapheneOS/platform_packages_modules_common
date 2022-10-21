@@ -542,7 +542,8 @@ java_sdk_library_import {{
             # so disable the pylint check.
             # pylint: disable=subprocess-run-check
             diff = subprocess.run(
-                ["diff", "-u0", latest_api, extracted_current_api],
+                ["diff", "-u0", latest_api, extracted_current_api, "--label", latest_api, "--label",
+                 extracted_current_api],
                 capture_output=True).stdout.decode("utf-8")
             file_object.write(diff)
 
