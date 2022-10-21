@@ -970,12 +970,6 @@ MAINLINE_MODULES = [
         for_r_build=None,
     ),
     MainlineModule(
-        apex="com.android.devicelock",
-        sdks=["devicelock-module-sdk"],
-        first_release=Tiramisu,
-        last_optional_release=LATEST,
-    ),
-    MainlineModule(
         apex="com.android.healthconnect",
         sdks=["healthconnect-module-sdk"],
         first_release=LATEST,
