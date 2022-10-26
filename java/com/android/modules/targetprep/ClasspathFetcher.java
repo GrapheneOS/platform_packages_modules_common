@@ -27,6 +27,7 @@ import com.android.modules.proto.ClasspathClasses.ClasspathClassesDump;
 import com.android.modules.proto.ClasspathClasses.ClasspathEntry;
 import com.android.modules.proto.ClasspathClasses.Jar;
 
+import com.android.tradefed.config.Option;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.INativeDevice;
 import com.android.tradefed.device.ITestDevice;
@@ -77,6 +78,13 @@ public class ClasspathFetcher extends BaseTargetPreparer {
     // TODO(andreionea): also fetch classes for standalone system server jars, apk-in-apex and
     // shared libraries. They require more mocking on the test side.
 
+    public static final String APEX_PKG_TAG = "apex-package";
+    // Special case for fetching only non-updatable platform.
+    public static final String PLATFORM_PACKAGE = "platform";
+
+    @Option(name = "apex-package",
+            description = "The package name of the apex under test.")
+    private String mApexPackage;
 
     private boolean mFetchedArtifacts = false;
 
@@ -84,6 +92,9 @@ public class ClasspathFetcher extends BaseTargetPreparer {
     public void setUp(TestInformation testInfo)
             throws TargetSetupError, DeviceNotAvailableException {
         Objects.requireNonNull(testInfo.getDevice());
+        if (mApexPackage != null) {
+            testInfo.properties().put(APEX_PKG_TAG, mApexPackage);
+        }
         // The artifacts have been fetched already, no need to do anything else.
         if (testInfo.properties().containsKey(DEVICE_JAR_ARTIFACTS_TAG)) {
             return;

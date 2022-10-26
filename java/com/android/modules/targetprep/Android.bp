@@ -28,4 +28,8 @@ java_library_host {
         "compat-classpaths-testing",
         "classpath_classes_proto_java"
     ],
+    visibility: [
+        "//packages/modules/common:__subpackages__",
+        "//packages/modules/SdkExtensions",
+    ],
 }
