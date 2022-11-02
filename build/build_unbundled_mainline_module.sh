@@ -149,17 +149,6 @@ function main() {
   build/soong/soong_ui.bash --make-mode installclean
 
   DIST_DIR="${DIST_DIR}" build_modules
-
-  # TODO(b/198437211): remove unconditionally added APEX_BUILD_FOR_PRE_S_DEVICES
-  # below.
-  # Command line flag passed in would also build modules configured
-  # for PRE_S configuration.  Disabled by default, this feature enables
-  # building modules with statically linked libraries.
-  # https://goto.google.com/building-dynamic-common-apex-variants
-  # Artifacts are stored in a different dist_dir (*_pre_s)
-  if [[ "${BUILD_PRE_S_APEX}" == "true" ]]; then
-      DIST_DIR="${DIST_DIR}_pre_s" APEX_BUILD_FOR_PRE_S_DEVICES=true build_modules
-  fi
 }
 
 init "$@"
