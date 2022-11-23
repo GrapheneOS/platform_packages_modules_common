@@ -50,8 +50,8 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         z.writestr(f"sdk_library/public/{name}.txt",
                    "method public int testMethod(int);")
 
-    def create_snapshot_file(self, out_dir, name, version, for_r_build):
-        zip_file = Path(mm.sdk_snapshot_zip_file(out_dir, name, version))
+    def create_snapshot_file(self, out_dir, name, for_r_build):
+        zip_file = Path(mm.sdk_snapshot_zip_file(out_dir, name))
         with zipfile.ZipFile(zip_file, "w") as z:
             z.writestr("Android.bp", "")
             if name.endswith("-sdk"):
@@ -61,18 +61,16 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                 else:
                     self.create_sdk_library_files(z, re.sub(r"-.*$", "", name))
 
-    def build_snapshots(self, build_release, sdk_versions, modules):
+    def build_snapshots(self, build_release, modules):
         self.snapshots.append((build_release.name, build_release.soong_env,
-                               sdk_versions, [m.apex for m in modules]))
+                               [m.apex for m in modules]))
         # Create input file structure.
         sdks_out_dir = Path(self.mainline_sdks_dir).joinpath("test")
         sdks_out_dir.mkdir(parents=True, exist_ok=True)
         # Create a fake sdk zip file for each module.
         for module in modules:
             for sdk in module.sdks:
-                for sdk_version in sdk_versions:
-                    self.create_snapshot_file(sdks_out_dir, sdk, sdk_version,
-                                              module.for_r_build)
+                self.create_snapshot_file(sdks_out_dir, sdk, module.for_r_build)
         return sdks_out_dir
 
     def get_art_module_info_file_data(self, sdk):
@@ -110,7 +108,7 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
             # For rest of the modules, generate an empty .info file.
             self.write_data_to_file(sdk_info_file, "[]")
 
-    def build_sdk_scope_targets(self, build_release, sdk_version, modules):
+    def build_sdk_scope_targets(self, build_release, modules):
         target_paths = []
         target_dict = {}
         for module in modules:
@@ -119,8 +117,7 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
                     continue
 
                 sdk_info_file = mm.sdk_snapshot_info_file(
-                    Path(self.mainline_sdks_dir).joinpath("test"), sdk,
-                    sdk_version)
+                    Path(self.mainline_sdks_dir).joinpath("test"), sdk)
                 self.create_snapshot_info_file(module, sdk_info_file, sdk)
                 paths, dict_item = self.latest_api_file_targets(sdk_info_file)
                 target_paths.extend(paths)
@@ -358,13 +355,11 @@ class TestProduceDist(unittest.TestCase):
             (
                 "R",
                 {},
-                ["current"],
                 ["com.android.ipsec", "com.google.android.wifi"],
             ),
             (
                 "latest",
                 {},
-                ["current"],
                 [
                     "com.android.art", "com.android.ipsec",
                     "com.google.android.wifi"
@@ -375,7 +370,6 @@ class TestProduceDist(unittest.TestCase):
                 {
                     "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": "S"
                 },
-                ["current"],
                 [
                     "com.android.art", "com.android.ipsec",
                     "com.google.android.wifi"
