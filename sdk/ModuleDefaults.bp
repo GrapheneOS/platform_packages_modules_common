@@ -108,9 +108,6 @@ java_defaults {
 
     defaults_visibility: ["//visibility:private"],
 
-    // Collates API usages from each module for further analysis.
-    plugins: ["java_api_finder"],
-
     // Disallow disabling the NewApi lint check.
     lint: {
         strict_updatability_linting: true,
