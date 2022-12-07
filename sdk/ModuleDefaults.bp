@@ -108,12 +108,33 @@ java_defaults {
 
     defaults_visibility: ["//visibility:private"],
 
-    // Disallow disabling the NewApi lint check.
-    lint: {
-        strict_updatability_linting: true,
+    dist_group: "android",
+}
+
+// Defaults for the java_sdk_libraries of non-updatable modules.
+// java_sdk_libraries using these defaults should also add themselves to the
+// non_updatable_modules list in frameworks/base/api/api.go
+java_defaults {
+    name: "non-updatable-framework-module-defaults",
+    defaults: ["framework-module-common-defaults"],
+
+    system: {
+        enabled: true,
+        sdk_version: "module_current",
+    },
+    module_lib: {
+        enabled: true,
+        sdk_version: "module_current",
+    },
+    // Non-updatable modules are allowed to provide @TestApi
+    test: {
+        enabled: true,
+        sdk_version: "module_current",
     },
 
-    dist_group: "android",
+    defaults_visibility: [
+        "//packages/modules/Virtualization:__subpackages__",
+    ],
 }
 
 // Defaults for mainline module provided java_sdk_library instances.
@@ -130,6 +151,12 @@ java_defaults {
         enabled: true,
         sdk_version: "module_current",
     },
+
+    // Disallow disabling the NewApi lint check.
+    lint: {
+        strict_updatability_linting: true,
+    },
+
     defaults_visibility: [
         ":__subpackages__",
         "//frameworks/base/apex:__subpackages__",
@@ -151,6 +178,12 @@ java_defaults {
         enabled: true,
         sdk_version: "system_server_current",
     },
+
+    // Disallow disabling the NewApi lint check.
+    lint: {
+        strict_updatability_linting: true,
+    },
+
     defaults_visibility: [
         ":__subpackages__",
         "//art/libartservice:__subpackages__",
