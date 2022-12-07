@@ -932,6 +932,11 @@ MAINLINE_MODULES = [
         last_optional_release=LATEST,
     ),
     MainlineModule(
+        apex="com.android.configinfrastructure",
+        sdks=["configinfrastructure-sdk"],
+        first_release=UpsideDownCake,
+    ),
+    MainlineModule(
         apex="com.android.conscrypt",
         sdks=[
             "conscrypt-module-sdk",
