@@ -292,10 +292,10 @@ library_linking_strategy_apex_defaults {
 apex_defaults {
     name: "s-launched-apex-module",
     min_sdk_version: "31",
+    updatable: true,
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
     compressible:true,
-    updatable: true,
     defaults_visibility: [
         "//art:__subpackages__",
         "//packages/modules:__subpackages__",
