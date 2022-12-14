@@ -993,6 +993,11 @@ MAINLINE_MODULES = [
         last_optional_release=LATEST,
     ),
     MainlineModule(
+        apex="com.android.rkpd",
+        sdks=["rkpd-sdk"],
+        first_release=UpsideDownCake,
+    ),
+    MainlineModule(
         apex="com.android.scheduling",
         sdks=["scheduling-sdk"],
         first_release=S,
