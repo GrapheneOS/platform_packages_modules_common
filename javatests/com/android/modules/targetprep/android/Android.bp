@@ -18,27 +18,14 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "ClasspathFetcherTest",
-    test_options: {
-        unit_test: true,
-    },
-    srcs: [
-        "ClasspathFetcherTest.java"
-    ],
-    static_libs: [
-        "ClasspathFetcher",
-        "mockito-host",
-        "objenesis",
-        "truth-prebuilt",
-        "junit",
-        "tradefed",
-    ],
-    java_resources: [
-        ":LibraryA",
-        ":LibraryB",
-    ],
-    test_suites: [
-        "general-tests",
-    ],
+java_library {
+    name: "LibraryA",
+    srcs: ["A.java"],
+    installable: true,
+}
+
+java_library {
+    name: "LibraryB",
+    srcs: ["B.java"],
+    installable: true,
 }
