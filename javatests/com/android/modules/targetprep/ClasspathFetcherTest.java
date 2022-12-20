@@ -22,17 +22,30 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
+import com.android.modules.proto.ClasspathClasses.ClasspathClassesDump;
+import com.android.modules.proto.ClasspathClasses.ClasspathEntry;
 import com.android.tradefed.build.IDeviceBuildInfo;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.invoker.IInvocationContext;
 import com.android.tradefed.invoker.InvocationContext;
 import com.android.tradefed.invoker.TestInformation;
+import com.android.tradefed.util.CommandResult;
+import com.android.tradefed.util.CommandStatus;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -46,6 +59,7 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 
 @RunWith(JUnit4.class)
 public class ClasspathFetcherTest {
@@ -57,6 +71,9 @@ public class ClasspathFetcherTest {
 
     private TestInformation mTestInfo;
 
+    private String mBootclasspathJarNames = "";
+    private String mSystemServerclasspathJarNames = "";
+
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
@@ -64,6 +81,28 @@ public class ClasspathFetcherTest {
         when(mMockTestDevice.getSerialNumber()).thenReturn(SERIAL);
         when(mMockTestDevice.getDeviceDescriptor()).thenReturn(null);
         when(mMockTestDevice.isAppEnumerationSupported()).thenReturn(false);
+        when(mMockTestDevice.executeShellV2Command(eq("echo $BOOTCLASSPATH"))).then(
+            invocation -> {
+                    return successfulCommandResult(mBootclasspathJarNames, "");
+                }
+            );
+        when(mMockTestDevice.executeShellV2Command(eq("echo $SYSTEMSERVERCLASSPATH"))).then(
+            invocation -> {
+                    return successfulCommandResult(mSystemServerclasspathJarNames, "");
+                }
+            );
+        when(mMockTestDevice.pullFile(anyString())).then(
+            invocation -> {
+                final String path = invocation.getArgument(0);
+                final File tempFile = File.createTempFile(path, null);
+
+                try (InputStream is =
+                        ClasspathFetcherTest.class.getClassLoader().getResourceAsStream(path)) {
+                    Files.copy(is, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+                return tempFile;
+            }
+        );
         IInvocationContext context = new InvocationContext();
         context.addAllocatedDevice("device", mMockTestDevice);
         context.addDeviceBuildInfo("device", mMockBuildInfo);
@@ -72,6 +111,8 @@ public class ClasspathFetcherTest {
 
     @Test
     public void testSingleArtifactFetcher() throws Exception {
+        mBootclasspathJarNames = "LibraryA.jar";
+        mSystemServerclasspathJarNames = "LibraryB.jar";
         final ClasspathFetcher fetcher = new ClasspathFetcher();
         fetcher.setUp(mTestInfo);
         assertThat(mTestInfo.properties().containsKey(DEVICE_JAR_ARTIFACTS_TAG)).isTrue();
@@ -81,6 +122,8 @@ public class ClasspathFetcherTest {
 
     @Test
     public void testMultipleArtifactFetchers() throws Exception {
+        mBootclasspathJarNames = "LibraryA.jar";
+        mSystemServerclasspathJarNames = "LibraryB.jar";
         final ClasspathFetcher fetcher1 = new ClasspathFetcher();
         final ClasspathFetcher fetcher2 = new ClasspathFetcher();
 
@@ -92,4 +135,68 @@ public class ClasspathFetcherTest {
         fetcher1.tearDown(mTestInfo, null);
         assertThat(mTestInfo.properties().containsKey(DEVICE_JAR_ARTIFACTS_TAG)).isFalse();
     }
+
+    @Test
+    public void testFetchCorrectBcpClasses() throws Exception {
+        mBootclasspathJarNames = "LibraryA.jar";
+        mSystemServerclasspathJarNames = "LibraryB.jar";
+        final ClasspathFetcher fetcher = new ClasspathFetcher();
+
+        try {
+            fetcher.setUp(mTestInfo);
+
+            final File bcpProto = new File(mTestInfo.properties().get(DEVICE_JAR_ARTIFACTS_TAG),
+                    ClasspathFetcher.BCP_CLASSES_FILE);
+            assertThat(bcpProto.exists()).isTrue();
+            ClasspathClassesDump dump =
+                    ClasspathClassesDump.parseFrom(new FileInputStream(bcpProto));
+            List<ClasspathEntry> entries = dump.getEntriesList();
+            assertThat(entries.size()).isEqualTo(1);
+            ClasspathEntry entry = entries.get(0);
+            assertThat(entry.hasJar()).isTrue();
+            assertThat(entry.getJar().getPath()).isEqualTo("LibraryA.jar");
+            assertThat(entry.getClassesList().size()).isEqualTo(1);
+            assertThat(entry.getClassesList().get(0))
+                    .isEqualTo("Lcom/android/modules/targetprep/android/A;");
+        } finally {
+            fetcher.tearDown(mTestInfo, null);
+        }
+    }
+
+    @Test
+    public void testFetchCorrectSscpClasses() throws Exception {
+        mBootclasspathJarNames = "LibraryA.jar";
+        mSystemServerclasspathJarNames = "LibraryB.jar";
+        final ClasspathFetcher fetcher = new ClasspathFetcher();
+
+        try {
+            fetcher.setUp(mTestInfo);
+
+            final File sscpProto = new File(mTestInfo.properties().get(DEVICE_JAR_ARTIFACTS_TAG),
+                    ClasspathFetcher.SSCP_CLASSES_FILE);
+            assertThat(sscpProto.exists()).isTrue();
+            ClasspathClassesDump dump =
+                    ClasspathClassesDump.parseFrom(new FileInputStream(sscpProto));
+            List<ClasspathEntry> entries = dump.getEntriesList();
+            assertThat(entries.size()).isEqualTo(1);
+            ClasspathEntry entry = entries.get(0);
+            assertThat(entry.hasJar()).isTrue();
+            assertThat(entry.getJar().getPath()).isEqualTo("LibraryB.jar");
+            assertThat(entry.getClassesList().size()).isEqualTo(1);
+            assertThat(entry.getClassesList().get(0))
+                .isEqualTo("Lcom/android/modules/targetprep/android/B;");
+        } finally {
+            fetcher.tearDown(mTestInfo, null);
+        }
+    }
+
+    private static CommandResult successfulCommandResult(String stdout, String stderr) {
+        final CommandResult result = new CommandResult();
+        result.setStatus(CommandStatus.SUCCESS);
+        result.setExitCode(0);
+        result.setStdout(stdout);
+        result.setStderr(stderr);
+        return result;
+    }
+
 }
