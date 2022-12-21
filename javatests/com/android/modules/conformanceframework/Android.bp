@@ -19,24 +19,18 @@ package {
 }
 
 java_test_host {
-    name: "ClasspathFetcherTest",
-    test_options: {
-        unit_test: true,
-    },
-    srcs: [
-        "ClasspathFetcherTest.java"
-    ],
+    name: "ConformanceFrameworkTests",
+    srcs: ["*.java"],
     static_libs: [
-        "ClasspathFetcher",
-        "mockito-host",
-        "objenesis",
-        "truth-prebuilt",
         "junit",
-        "tradefed",
+        "ClasspathFetcher",
+        "truth-prebuilt",
+        "objenesis",
     ],
-    java_resources: [
-        ":LibraryA",
-        ":LibraryB",
+    libs: [
+        "cts-tradefed",
+        "tradefed",
+        "compatibility-host-util",
     ],
     test_suites: [
         "general-tests",

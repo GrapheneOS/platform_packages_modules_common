@@ -24,4 +24,12 @@ java_library_host {
         "compatibility-host-util",
         "androidx.annotation_annotation",
     ],
+    static_libs: [
+        "compat-classpaths-testing",
+        "classpath_classes_proto_java"
+    ],
+    visibility: [
+        "//packages/modules/common:__subpackages__",
+        "//packages/modules/SdkExtensions",
+    ],
 }
