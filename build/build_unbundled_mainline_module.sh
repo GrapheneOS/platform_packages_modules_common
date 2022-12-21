@@ -128,9 +128,11 @@ function init() {
 
 function build_modules() {
 
+  #TODO(b/263406837) remove BUILD_BROKEN_DISABLE_BAZEL, which will enable Bazel builds with --bazel-mode by default
   build/soong/soong_ui.bash --make-mode "$@" \
     ALWAYS_EMBED_NOTICES=true \
     MODULE_BUILD_FROM_SOURCE=true \
+    BUILD_BROKEN_DISABLE_BAZEL=true \
     ${extra_build_params} \
     "${RUN_ERROR_PRONE:+"RUN_ERROR_PRONE=true"}" \
     apps_only \
