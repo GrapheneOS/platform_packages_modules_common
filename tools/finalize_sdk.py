@@ -57,7 +57,9 @@ def fetch_artifacts(target, build_id, artifact_path):
 def repo_for_sdk(filename):
     module = filename.split('-')[0]
     target_dir = ''
+    if module == 'btservices': return Path('prebuilts/module_sdk/Bluetooth')
     if module == 'media': return Path('prebuilts/module_sdk/Media')
+    if module == 'rkpd': return Path('prebuilts/module_sdk/RemoteKeyProvisioning')
     if module == 'tethering': return Path('prebuilts/module_sdk/Connectivity')
     for dir in os.listdir('prebuilts/module_sdk/'):
         if module.lower() in dir.lower():
