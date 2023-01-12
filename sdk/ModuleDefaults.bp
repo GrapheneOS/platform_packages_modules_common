@@ -240,7 +240,10 @@ DCLA_MIN_SDK_VERSION = "31"
 
 soong_config_module_type_import {
     from: "system/apex/Android.bp",
-    module_types: ["library_linking_strategy_apex_defaults"],
+    module_types: [
+        "library_linking_strategy_apex_defaults",
+        "library_linking_strategy_cc_defaults",
+    ],
 }
 
 library_linking_strategy_apex_defaults {
@@ -321,4 +324,21 @@ apex_defaults {
     // Whether it actually will be compressed is controlled on per-device basis.
     compressible: true,
     defaults_visibility: ["//packages/modules:__subpackages__"],
+}
+
+APEX_LOWEST_MIN_SDK_VERSION = "29"
+
+library_linking_strategy_cc_defaults {
+    name: "apex-lowest-min-sdk-version",
+    defaults_visibility: [
+         "//system/core/libutils",
+    ],
+    min_sdk_version: APEX_LOWEST_MIN_SDK_VERSION,
+    soong_config_variables: {
+        library_linking_strategy: {
+            prefer_static: {
+                min_sdk_version: "apex_inherit",
+            },
+        },
+    },
 }
