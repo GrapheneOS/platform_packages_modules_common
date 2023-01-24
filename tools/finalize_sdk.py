@@ -164,6 +164,7 @@ for m in module_names:
             created_dirs[COMPAT_REPO].add(dest_dir.relative_to(COMPAT_REPO))
 
 if args.local_mode:
+    print('Updated prebuilts using locally built artifacts. Don\'t submit or use for anything besides local testing.')
     sys.exit(0)
 
 subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
