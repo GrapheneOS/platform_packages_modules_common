@@ -1006,6 +1006,8 @@ MAINLINE_MODULES = [
         apex="com.android.rkpd",
         sdks=["rkpd-sdk"],
         first_release=UpsideDownCake,
+        # Rkpd has always been and is still optional.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.scheduling",
