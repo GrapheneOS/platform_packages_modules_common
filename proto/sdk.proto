@@ -53,7 +53,7 @@ enum SdkModule {
   // U modules
   // BT_SERVICES - optional
   CONFIG_INFRASTRUCTURE = 14;
-  HEALTH_CONNECT = 15;
+  HEALTH_FITNESS = 15;
   // REMOTE_KEY_PROVISIONING - optional
 }
 
