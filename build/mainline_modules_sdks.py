@@ -950,8 +950,8 @@ MAINLINE_MODULES = [
         for_r_build=None,
     ),
     MainlineModule(
-        apex="com.android.healthconnect",
-        sdks=["healthconnect-module-sdk"],
+        apex="com.android.healthfitness",
+        sdks=["healthfitness-module-sdk"],
         first_release=LATEST,
     ),
     MainlineModule(
