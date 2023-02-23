@@ -27,6 +27,7 @@ enum SdkModule {
 
   // R modules
   CONSCRYPT = 10;
+  EXT_SERVICES = 14;
   IPSEC = 1;
   MEDIA = 2;
   MEDIA_PROVIDER = 3;
