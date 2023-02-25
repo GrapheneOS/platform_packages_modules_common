@@ -31,6 +31,7 @@ enum SdkModule {
 
   // R modules
   CONSCRYPT = 10;
+  EXT_SERVICES = 14;
   IPSEC = 1;
   MEDIA = 2;
   MEDIA_PROVIDER = 3;
@@ -52,8 +53,8 @@ enum SdkModule {
 
   // U modules
   // BT_SERVICES - optional
-  CONFIG_INFRASTRUCTURE = 14;
-  HEALTH_FITNESS = 15;
+  CONFIG_INFRASTRUCTURE = 15;
+  HEALTH_FITNESS = 16;
   // REMOTE_KEY_PROVISIONING - optional
 }
 
