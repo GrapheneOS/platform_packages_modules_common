@@ -140,6 +140,7 @@ function main() {
     ALWAYS_EMBED_NOTICES=true \
     MODULE_BUILD_FROM_SOURCE=true \
     BUILD_BROKEN_DISABLE_BAZEL=true \
+    ${extra_build_params} \
     "${RUN_ERROR_PRONE:+"RUN_ERROR_PRONE=true"}" \
     apps_only \
     dist \
