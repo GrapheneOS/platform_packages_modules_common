@@ -227,6 +227,12 @@ java_defaults {
     },
 }
 
+filegroup_defaults {
+    name: "framework-sources-module-defaults",
+    visibility: ["//frameworks/base"], // For the "global" stubs
+    defaults_visibility: ["//visibility:public"],
+}
+
 // These apex_defaults serve as a common place to add properties which should
 // affect all mainline modules.
 
