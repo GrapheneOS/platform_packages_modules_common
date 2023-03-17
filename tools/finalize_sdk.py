@@ -67,7 +67,6 @@ def repo_for_sdk(filename):
     module = filename.split('-')[0]
     target_dir = ''
     if module == 'btservices': return Path('prebuilts/module_sdk/Bluetooth')
-    if module == 'healthfitness': return Path('prebuilts/module_sdk/HealthConnect')
     if module == 'media': return Path('prebuilts/module_sdk/Media')
     if module == 'rkpd': return Path('prebuilts/module_sdk/RemoteKeyProvisioning')
     if module == 'tethering': return Path('prebuilts/module_sdk/Connectivity')
