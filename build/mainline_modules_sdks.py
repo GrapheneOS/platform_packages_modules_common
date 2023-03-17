@@ -927,7 +927,7 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.btservices",
         sdks=["btservices-module-sdk"],
-        first_release=LATEST,
+        first_release=UpsideDownCake,
         # Bluetooth has always been and is still optional.
         last_optional_release=LATEST,
     ),
