@@ -952,7 +952,7 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.healthfitness",
         sdks=["healthfitness-module-sdk"],
-        first_release=LATEST,
+        first_release=UpsideDownCake,
     ),
     MainlineModule(
         apex="com.android.ipsec",
