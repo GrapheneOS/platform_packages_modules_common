@@ -23,6 +23,7 @@ import shutil
 import tempfile
 import unittest
 import zipfile
+import json
 from unittest import mock
 
 import mainline_modules_sdks as mm
@@ -107,6 +108,10 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
         else:
             # For rest of the modules, generate an empty .info file.
             self.write_data_to_file(sdk_info_file, "[]")
+
+    def get_module_extension_version(self):
+        # Return any integer value indicating the module extension version for testing.
+        return 5
 
     def build_sdk_scope_targets(self, build_release, modules):
         target_paths = []
@@ -199,14 +204,18 @@ class TestProduceDist(unittest.TestCase):
                 "mainline-sdks/for-S-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
                 "mainline-sdks/for-S-build/current/com.android.tethering/sdk/tethering-module-sdk-current.zip",
                 "mainline-sdks/for-S-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.art/gantry-metadata.json",
                 "mainline-sdks/for-latest-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/test-exports/art-module-test-exports-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.ipsec/gantry-metadata.json",
                 "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.ipsec/sdk/ipsec-module-sdk-current.zip",
+                "mainline-sdks/for-latest-build/current/com.android.tethering/gantry-metadata.json",
                 "mainline-sdks/for-latest-build/current/com.android.tethering/sdk/tethering-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.tethering/sdk/tethering-module-sdk-current.zip",
+                "mainline-sdks/for-latest-build/current/com.google.android.wifi/gantry-metadata.json",
                 "mainline-sdks/for-latest-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.google.android.wifi/sdk/wifi-module-sdk-current.zip",
             ],
@@ -295,6 +304,7 @@ class TestProduceDist(unittest.TestCase):
                 "bundled-mainline-sdks/platform-mainline/sdk/platform-mainline-sdk-current.zip",
                 "bundled-mainline-sdks/platform-mainline/test-exports/platform-mainline-test-exports-current.zip",
                 # Unbundled (normal) modules.
+                "mainline-sdks/for-latest-build/current/com.android.art/gantry-metadata.json",
                 "mainline-sdks/for-latest-build/current/com.android.art/host-exports/art-module-host-exports-current.zip",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current-api-diff.txt",
                 "mainline-sdks/for-latest-build/current/com.android.art/sdk/art-module-sdk-current.zip",
@@ -310,6 +320,29 @@ class TestProduceDist(unittest.TestCase):
             os.path.getsize(art_api_diff_file),
             0,
             msg="Api diff file should not be empty for the art module")
+
+        art_gantry_metadata_json_file = os.path.join(
+            self.tmp_dist_dir,
+            "mainline-sdks/for-latest-build/current/com.android.art/gantry-metadata.json"
+        )
+
+        with open(art_gantry_metadata_json_file, "r",
+                  encoding="utf8") as gantry_metadata_json_file_object:
+            json_data = json.load(gantry_metadata_json_file_object)
+
+        self.assertEqual(
+            json_data["api_diff_file"],
+            "art-module-sdk-current-api-diff.txt",
+            msg="Incorrect api-diff file name.")
+        self.assertEqual(
+            json_data["api_diff_file_size"],
+            267,
+            msg="Incorrect api-diff file size.")
+        self.assertEqual(
+            json_data["module_extension_version"],
+            5,
+            msg="The module extension version does not match the expected value."
+        )
 
     def create_build_number_file(self):
         soong_dir = os.path.join(self.tmp_out_dir, "soong")
