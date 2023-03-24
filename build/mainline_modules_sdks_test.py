@@ -570,6 +570,42 @@ class TestAndroidBpTransformations(unittest.TestCase):
 
         self.apply_transformations(src, transformations, mm.R, expected)
 
+    def test_additional_transformation(self):
+        """Tests additional transformation.
+
+        This uses ipsec as an example of a common case for adding information
+        in Android.bp file.
+        This checks will append the information in Android.bp for a regular module.
+        """
+
+        @dataclasses.dataclass(frozen=True)
+        class TestTransformation(mm.FileTransformation):
+            """Transforms an Android.bp file by appending testing message."""
+
+            test_content: str = ""
+
+            def apply(self, producer, path, build_release):
+                with open(path, "a+", encoding="utf8") as file:
+                    self._apply_transformation(producer, file, build_release)
+
+            def _apply_transformation(self, producer, file, build_release):
+                if build_release >= mm.Tiramisu:
+                    file.write(self.test_content)
+
+        src = read_test_data("ipsec_Android.bp.input")
+
+        expected = read_test_data(
+            "ipsec_tiramisu_Android.bp.additional.expected")
+        test_transformation = TestTransformation(
+            "Android.bp", test_content="\n// Adding by test")
+        module = MAINLINE_MODULES_BY_APEX["com.android.ipsec"]
+        module = dataclasses.replace(
+            module, apex=module.apex,
+            first_release=module.first_release,
+            additional_transformations=[test_transformation])
+        transformations = module.transformations(mm.Tiramisu, mm.Sdk)
+        self.apply_transformations(src, transformations, mm.Tiramisu, expected)
+
 
 class TestFilterModules(unittest.TestCase):
 
