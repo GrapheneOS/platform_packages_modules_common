@@ -117,10 +117,6 @@ class SoongConfigBoilerplateInserter(SoongConfigVarTransformation):
     def config_module_type(self, module_type):
         return self.configModuleTypePrefix + module_type
 
-    def apply(self, producer, path, build_release):
-        with open(path, "r+", encoding="utf8") as file:
-            self._apply_transformation(producer, file, build_release)
-
     def _apply_transformation(self, producer, file, build_release):
         # TODO(b/174997203): Remove this when we have a proper way to control
         #  prefer flags in Mainline modules.
@@ -864,6 +860,9 @@ class MainlineModule:
     # Defaults to the last part of the apex name.
     short_name: str = ""
 
+    # Additional transformations
+    additional_transformations: list[FileTransformation] = None
+
     def __post_init__(self):
         # If short_name is not set then set it to the last component of the apex
         # name.
@@ -904,6 +903,9 @@ class MainlineModule:
             transformation = UseSourceConfigVarTransformation(
                 "Android.bp", configVar=config_var)
             transformations.append(transformation)
+
+        if self.additional_transformations and build_release > R:
+            transformations.extend(self.additional_transformations)
 
         return transformations
 
