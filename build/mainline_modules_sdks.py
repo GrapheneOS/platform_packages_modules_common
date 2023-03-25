@@ -72,12 +72,12 @@ class FileTransformation:
     # The path of the file within the SDK snapshot zip file.
     path: str
 
-    def apply(self, producer, path):
+    def apply(self, producer, path, build_release):
         """Apply the transformation to the path; changing it in place."""
         with open(path, "r+", encoding="utf8") as file:
-            self._apply_transformation(producer, file)
+            self._apply_transformation(producer, file, build_release)
 
-    def _apply_transformation(self, producer, file):
+    def _apply_transformation(self, producer, file, build_release):
         """Apply the transformation to the file.
 
         The file has been opened in read/write mode so the implementation of
@@ -96,7 +96,7 @@ class SoongConfigVarTransformation(FileTransformation):
     # The line containing the prefer property.
     PREFER_LINE = "    prefer: false,"
 
-    def _apply_transformation(self, producer, file):
+    def _apply_transformation(self, producer, file, build_release):
         raise NotImplementedError
 
 
@@ -117,11 +117,7 @@ class SoongConfigBoilerplateInserter(SoongConfigVarTransformation):
     def config_module_type(self, module_type):
         return self.configModuleTypePrefix + module_type
 
-    def apply(self, producer, path):
-        with open(path, "r+", encoding="utf8") as file:
-            self._apply_transformation(producer, file)
-
-    def _apply_transformation(self, producer, file):
+    def _apply_transformation(self, producer, file, build_release):
         # TODO(b/174997203): Remove this when we have a proper way to control
         #  prefer flags in Mainline modules.
 
@@ -228,7 +224,7 @@ soong_config_module_type {{
 @dataclasses.dataclass(frozen=True)
 class UseSourceConfigVarTransformation(SoongConfigVarTransformation):
 
-    def _apply_transformation(self, producer, file):
+    def _apply_transformation(self, producer, file, build_release):
         lines = []
         for line in file:
             line = line.rstrip("\n")
@@ -864,6 +860,9 @@ class MainlineModule:
     # Defaults to the last part of the apex name.
     short_name: str = ""
 
+    # Additional transformations
+    additional_transformations: list[FileTransformation] = None
+
     def __post_init__(self):
         # If short_name is not set then set it to the last component of the apex
         # name.
@@ -904,6 +903,9 @@ class MainlineModule:
             transformation = UseSourceConfigVarTransformation(
                 "Android.bp", configVar=config_var)
             transformations.append(transformation)
+
+        if self.additional_transformations and build_release > R:
+            transformations.extend(self.additional_transformations)
 
         return transformations
 
@@ -1271,9 +1273,11 @@ class SdkDistProducer:
         sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk)
         sdk_type = sdk_type_from_name(sdk)
         transformations = module.transformations(build_release, sdk_type)
-        self.dist_sdk_snapshot_zip(sdk_path, sdk_dist_subdir, transformations)
+        self.dist_sdk_snapshot_zip(
+            build_release, sdk_path, sdk_dist_subdir, transformations)
 
-    def dist_sdk_snapshot_zip(self, src_sdk_zip, sdk_dist_dir, transformations):
+    def dist_sdk_snapshot_zip(
+        self, build_release, src_sdk_zip, sdk_dist_dir, transformations):
         """Copy the sdk snapshot zip file to a dist directory.
 
         If no transformations are provided then this simply copies the show sdk
@@ -1281,7 +1285,8 @@ class SdkDistProducer:
         provided then the files to be transformed are extracted from the
         snapshot zip file, they are transformed to files in a separate directory
         and then a new zip file is created in the dist directory with the
-        original files replaced by the newly transformed files.
+        original files replaced by the newly transformed files. build_release is
+        provided for transformations if it is needed.
         """
         os.makedirs(sdk_dist_dir, exist_ok=True)
         dest_sdk_zip = os.path.join(sdk_dist_dir, os.path.basename(src_sdk_zip))
@@ -1304,7 +1309,7 @@ class SdkDistProducer:
             extract_matching_files_from_zip(src_sdk_zip, tmp_dir, pattern)
 
             # Apply the transformations to the extracted files in situ.
-            apply_transformations(self, tmp_dir, transformations)
+            apply_transformations(self, tmp_dir, transformations, build_release)
 
             # Replace the original entries in the zip with the transformed
             # files.
@@ -1358,7 +1363,7 @@ def copy_zip_and_replace(producer, src_zip_path, dest_zip_path, src_dir, paths):
         cwd=src_dir)
 
 
-def apply_transformations(producer, tmp_dir, transformations):
+def apply_transformations(producer, tmp_dir, transformations, build_release):
     for transformation in transformations:
         path = os.path.join(tmp_dir, transformation.path)
 
@@ -1366,7 +1371,7 @@ def apply_transformations(producer, tmp_dir, transformations):
         modified = os.path.getmtime(path)
 
         # Transform the file.
-        transformation.apply(producer, path)
+        transformation.apply(producer, path, build_release)
 
         # Reset the timestamp of the file to the original timestamp before the
         # transformation was applied.
