@@ -229,7 +229,10 @@ java_defaults {
 
 filegroup_defaults {
     name: "framework-sources-module-defaults",
-    visibility: ["//frameworks/base"], // For the "global" stubs
+    visibility: [
+        "//frameworks/base",
+        "//frameworks/base/api",
+    ],
     defaults_visibility: ["//visibility:public"],
 }
 
