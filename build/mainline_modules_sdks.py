@@ -472,7 +472,8 @@ java_sdk_library_import {{
 
     @staticmethod
     def does_sdk_library_support_latest_api(sdk_library):
-        if sdk_library == "conscrypt.module.platform.api":
+        if sdk_library == "conscrypt.module.platform.api" or \
+            sdk_library == "conscrypt.module.intra.core.api":
             return False
         return True
 
@@ -503,6 +504,10 @@ java_sdk_library_import {{
                     target_dict[sdk_library][scope][target] = scope_json[target]
                 target_paths.append(scope_json["latest_api"])
                 target_paths.append(scope_json["latest_removed_api"])
+                target_paths.append(scope_json["latest_api"]
+                    .replace(".latest", ".latest.extension_version"))
+                target_paths.append(scope_json["latest_removed_api"]
+                    .replace(".latest", ".latest.extension_version"))
 
         return target_paths, target_dict
 
@@ -560,6 +565,7 @@ java_sdk_library_import {{
         with open(
                 sdk_api_diff_file, "w",
                 encoding="utf8") as sdk_api_diff_file_object:
+            last_finalized_version_set = set()
             for sdk_library in target_dict[sdk_info_file]:
                 for scope in target_dict[sdk_info_file][sdk_library]:
                     scope_json = target_dict[sdk_info_file][sdk_library][scope]
@@ -574,6 +580,33 @@ java_sdk_library_import {{
                     self.appendDiffToFile(sdk_api_diff_file_object,
                                           sdk_zip_file, removed_api,
                                           latest_removed_api, snapshots_dir)
+
+                    def read_extension_version(target):
+                        extension_target = target.replace(
+                            ".latest", ".latest.extension_version")
+                        with open(
+                            extension_target, "r", encoding="utf8") as file:
+                            version = int(file.read())
+                            # version equal to -1 means "not an extension version".
+                            if version != -1:
+                                last_finalized_version_set.add(version)
+
+                    read_extension_version(scope_json["latest_api"])
+                    read_extension_version(scope_json["latest_removed_api"])
+
+            if len(last_finalized_version_set) == 0:
+                # Either there is no java sdk library or all java sdk libraries
+                # have not been finalized in sdk extensions yet and hence have
+                # last finalized version set as -1.
+                gantry_metadata_dict["last_finalized_version"] = -1
+            elif len(last_finalized_version_set) == 1:
+                # All java sdk library extension version match.
+                gantry_metadata_dict["last_finalized_version"] =\
+                    last_finalized_version_set.pop()
+            else:
+                # Fail the build
+                raise ValueError(
+                    "Not all sdk libraries finalized with the same version.\n")
 
         gantry_metadata_dict["api_diff_file"] = sdk_api_diff_file.rsplit(
             "/", 1)[-1]
