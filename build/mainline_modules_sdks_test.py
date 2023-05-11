@@ -130,7 +130,11 @@ class FakeSnapshotBuilder(mm.SnapshotBuilder):
 
         for target_path in target_paths:
             os.makedirs(os.path.split(target_path)[0])
-            self.write_data_to_file(target_path, "")
+            if ".latest.extension_version" in target_path:
+                self.write_data_to_file(
+                    target_path, str(self.get_module_extension_version()))
+            else:
+               self.write_data_to_file(target_path, "")
 
         return target_dict
 
@@ -342,6 +346,11 @@ class TestProduceDist(unittest.TestCase):
             json_data["module_extension_version"],
             5,
             msg="The module extension version does not match the expected value."
+        )
+        self.assertEqual(
+            json_data["last_finalized_version"],
+            5,
+            msg="The last finalized version does not match the expected value."
         )
 
     def create_build_number_file(self):
