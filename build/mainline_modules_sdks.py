@@ -622,6 +622,9 @@ java_sdk_library_import {{
                   "w") as gantry_metadata_json_file_object:
             gantry_metadata_json_file_object.write(gantry_metadata_json_object)
 
+        if os.path.getsize(sdk_metadata_json_file) > 1048576: # 1 MB
+            raise ValueError("Metadata file size should not exceed 1 MB.\n")
+
     def get_module_extension_version(self):
         return int(
             subprocess.run([
