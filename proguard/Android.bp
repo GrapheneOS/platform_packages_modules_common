@@ -39,7 +39,12 @@ java_defaults {
         obfuscate: false,
         proguard_compatibility: false,
         ignore_warnings: false,
-        proguard_flags_files: [":framework-system-server-module-optimize-proguard-rules"],
+        proguard_flags_files: [
+            // Ensure classes referenced in the framework-res manifest
+            // and implemented by modules are kept.
+            ":framework-res{.aapt.proguardOptionsFile}",
+            ":framework-system-server-module-optimize-proguard-rules",
+        ],
     },
 }
 
@@ -60,6 +65,11 @@ java_defaults {
         obfuscate: false,
         proguard_compatibility: false,
         ignore_warnings: false,
-        proguard_flags_files: [":standalone-system-server-module-optimize-proguard-rules"],
+        proguard_flags_files: [
+            // Ensure classes referenced in the framework-res manifest
+            // and implemented by modules are kept.
+            ":framework-res{.aapt.proguardOptionsFile}",
+            ":standalone-system-server-module-optimize-proguard-rules"
+        ],
     },
 }
