@@ -410,6 +410,84 @@ class TestProduceDist(unittest.TestCase):
             ),
         ], snapshot_builder.snapshots)
 
+    def test_generate_sdk_supported_modules_file(self):
+        subprocess_runner = mm.SubprocessRunner()
+        snapshot_builder = FakeSnapshotBuilder(
+            tool_path="path/to/mainline_modules_sdks.sh",
+            subprocess_runner=subprocess_runner,
+            out_dir=self.tmp_out_dir,
+        )
+        producer = mm.SdkDistProducer(
+            subprocess_runner=subprocess_runner,
+            snapshot_builder=snapshot_builder,
+            dist_dir=self.tmp_dist_dir,
+        )
+        producer = mm.SdkDistProducer(
+            subprocess_runner=subprocess_runner,
+            snapshot_builder=snapshot_builder,
+            dist_dir=self.tmp_dist_dir,
+        )
+
+        # Contains only sdk modules.
+        modules = [
+            MAINLINE_MODULES_BY_APEX["com.android.adservices"],
+            MAINLINE_MODULES_BY_APEX["com.android.art"],
+            MAINLINE_MODULES_BY_APEX["com.android.mediaprovider"],
+        ]
+        producer.dist_generate_sdk_supported_modules_file(modules)
+        with open(os.path.join(self.tmp_dist_dir, "sdk-modules.txt"), "r",
+                  encoding="utf8") as sdk_modules_file:
+            sdk_modules = sdk_modules_file.readlines()
+
+        self.assertTrue("com.google.android.adservices\n" in sdk_modules)
+        self.assertTrue("com.google.android.art\n" in sdk_modules)
+        self.assertTrue("com.google.android.mediaprovider\n" in sdk_modules)
+
+        # Contains only non-sdk modules.
+        modules = [
+            mm.MainlineModule(
+                apex="com.android.adbd",
+                sdks=[],
+                first_release="",
+            ),
+            mm.MainlineModule(
+                apex="com.android.adbd",
+                sdks=[],
+                first_release="",
+            ),
+        ]
+        producer.dist_generate_sdk_supported_modules_file(modules)
+        with open(os.path.join(self.tmp_dist_dir, "sdk-modules.txt"), "r",
+                  encoding="utf8") as sdk_modules_file:
+            sdk_modules = sdk_modules_file.readlines()
+
+        self.assertEqual(len(sdk_modules), 0)
+
+        # Contains mixture of sdk and non-sdk modules.
+        modules = [
+            MAINLINE_MODULES_BY_APEX["com.android.adservices"],
+            MAINLINE_MODULES_BY_APEX["com.android.mediaprovider"],
+            mm.MainlineModule(
+                apex="com.android.adbd",
+                sdks=[],
+                first_release="",
+            ),
+            mm.MainlineModule(
+                apex="com.android.adbd",
+                sdks=[],
+                first_release="",
+            ),
+        ]
+        producer.dist_generate_sdk_supported_modules_file(modules)
+        with open(os.path.join(self.tmp_dist_dir, "sdk-modules.txt"), "r",
+                  encoding="utf8") as sdk_modules_file:
+            sdk_modules = sdk_modules_file.readlines()
+
+        self.assertTrue("com.google.android.adservices\n" in sdk_modules)
+        self.assertTrue("com.google.android.mediaprovider\n" in sdk_modules)
+        self.assertFalse("com.google.android.adbd\n" in sdk_modules)
+        self.assertFalse("com.google.android.extservices\n" in sdk_modules)
+
 
 def path_to_test_data(relative_path):
     """Construct a path to a test data file.
