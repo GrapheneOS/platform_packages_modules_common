@@ -50,7 +50,8 @@ function main() {
 
   # Building with --soong-only and module products requires build_number.txt for
   # some targets.
-  echo -n "${BUILD_NUMBER}" > "${OUT_DIR}"/soong/build_number.txt
+  # Command to populate {OUT_DIR}/soong/build_number.txt.
+  build/soong/soong_ui.bash --make-mode nothing
 
   # Delegate the SDK generation to the python script. Use the python version
   # provided by the build to ensure consistency across build environments.
