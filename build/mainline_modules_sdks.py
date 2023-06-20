@@ -1254,6 +1254,13 @@ class SdkDistProducer:
         shutil.copy(sdk_gantry_metadata_json_path,
                     sdk_dist_gantry_metadata_json_path)
 
+    def dist_generate_sdk_supported_modules_file(self, modules):
+        sdk_modules_file = os.path.join(self.dist_dir, "sdk-modules.txt")
+        with open(sdk_modules_file, "w", encoding="utf8") as file:
+            for module in modules:
+                if module in MAINLINE_MODULES:
+                    file.write(aosp_to_google_name(module.apex) + "\n")
+
     def populate_unbundled_dist(self, build_release, modules, snapshots_dir):
         build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
                                               build_release.sub_dir)
@@ -1517,6 +1524,7 @@ def main(args):
         modules += PLATFORM_SDKS_FOR_MAINLINE
 
     producer = create_producer(args.tool_path)
+    producer.dist_generate_sdk_supported_modules_file(modules)
     producer.produce_dist(modules, build_releases)
 
 
