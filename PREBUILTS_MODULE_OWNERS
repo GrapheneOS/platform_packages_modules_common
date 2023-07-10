@@ -10,6 +10,6 @@
 # See go/mainline-owners-policy for more details.
 
 include platform/packages/modules/common:/MODULES_OWNERS
-aseaton@google.com #{LAST_RESORT_SUGGESTION}
-dariofreni@google.com #{LAST_RESORT_SUGGESTION}
+marielos@google.com #{LAST_RESORT_SUGGESTION}
+robertogil@google.com #{LAST_RESORT_SUGGESTION}
 paulduffin@google.com #{LAST_RESORT_SUGGESTION}
