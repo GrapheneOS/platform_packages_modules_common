@@ -34,6 +34,7 @@ apex_test {
     key: "test_com.android.modules.apkinapex.key",
     certificate: ":test_com.android.modules.apkinapex.certificate",
     updatable: false,
+    min_sdk_version: "33",
     apps: [
         "com.android.modules.apkinapex.apps.installable",
         "com.android.modules.apkinapex.apps.futureminsdk",
