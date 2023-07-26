@@ -37,4 +37,5 @@ apex_test {
         "com.android.modules.updatablesharedlibs.libs.since.t",
     ],
     updatable: false,
+    min_sdk_version: "33",
 }
