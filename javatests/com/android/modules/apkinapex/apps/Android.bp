@@ -29,6 +29,7 @@ android_test_helper_app {
 
 android_test_helper_app {
     name: "com.android.modules.apkinapex.apps.futuretargetsdk",
+    min_sdk_version: "33",
     target_sdk_version: "Tiramisu",
     apex_available: [ "test_com.android.modules.apkinapex" ],
     manifest: "FutureTargetSdkAndroidManifest.xml"
@@ -36,6 +37,7 @@ android_test_helper_app {
 
 android_test_helper_app {
     name: "com.android.modules.apkinapex.apps.pastmaxsdk",
+    min_sdk_version: "29",
     target_sdk_version: "Tiramisu",
     apex_available: [ "test_com.android.modules.apkinapex" ],
     manifest: "PastMaxSdkAndroidManifest.xml"
