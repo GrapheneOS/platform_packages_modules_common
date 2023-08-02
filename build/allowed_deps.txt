@@ -14,6 +14,7 @@
 # TODO(b/157465465): introduce automated quality signals and remove this list.
 
 android.hardware.audio.common-V1-ndk(minSdkVersion:31)
+android.hardware.audio.common-V2-ndk(minSdkVersion:31)
 android.hardware.audio.common@5.0(minSdkVersion:30)
 android.hardware.bluetooth-V1-ndk(minSdkVersion:33)
 android.hardware.bluetooth.a2dp@1.0(minSdkVersion:30)
