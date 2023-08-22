@@ -1000,9 +1000,14 @@ MAINLINE_MODULES = [
     MainlineModule(
         apex="com.android.btservices",
         sdks=["btservices-module-sdk"],
-        first_release=LATEST,
+        first_release=UpsideDownCake,
         # Bluetooth has always been and is still optional.
         last_optional_release=LATEST,
+    ),
+    MainlineModule(
+        apex="com.android.configinfrastructure",
+        sdks=["configinfrastructure-sdk"],
+        first_release=UpsideDownCake,
     ),
     MainlineModule(
         apex="com.android.conscrypt",
@@ -1016,6 +1021,11 @@ MAINLINE_MODULES = [
         # Conscrypt was updatable in R but the generate_ml_bundle.sh does not
         # appear to generate a snapshot for it.
         for_r_build=None,
+    ),
+    MainlineModule(
+        apex="com.android.healthfitness",
+        sdks=["healthfitness-module-sdk"],
+        first_release=UpsideDownCake,
     ),
     MainlineModule(
         apex="com.android.ipsec",
@@ -1069,6 +1079,8 @@ MAINLINE_MODULES = [
         apex="com.android.rkpd",
         sdks=["rkpd-sdk"],
         first_release=UpsideDownCake,
+        # Rkpd has always been and is still optional.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.scheduling",
