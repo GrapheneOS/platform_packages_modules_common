@@ -1056,6 +1056,10 @@ MAINLINE_MODULES = [
         for_r_build=ForRBuild(sdk_libraries=[
             SdkLibrary(name="framework-mediaprovider"),
         ]),
+        # MP is a mandatory mainline module but in some cases (b/294190883) this
+        # needs to be optional for Android Go on T. GTS tests might be needed to
+        # to check the specific condition mentioned in the bug.
+        last_optional_release=LATEST,
     ),
     MainlineModule(
         apex="com.android.ondevicepersonalization",
