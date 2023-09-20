@@ -1027,6 +1027,14 @@ MAINLINE_MODULES = [
         for_r_build=None,
     ),
     MainlineModule(
+        apex="com.android.devicelock",
+        sdks=["devicelock-module-sdk"],
+        first_release=UpsideDownCake,
+        # Treat DeviceLock as optional at build time
+        # TODO(b/238203992): remove once all modules are optional at build time.
+        last_optional_release=LATEST,
+    ),
+    MainlineModule(
         apex="com.android.healthfitness",
         sdks=["healthfitness-module-sdk"],
         first_release=UpsideDownCake,
