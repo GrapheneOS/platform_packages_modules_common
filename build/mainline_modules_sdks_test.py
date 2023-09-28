@@ -607,6 +607,21 @@ class TestAndroidBpTransformations(unittest.TestCase):
 
         self.apply_transformations(src, transformations, mm.Tiramisu, expected)
 
+    def test_optional_mainline_module_latest(self):
+        """Tests the transformations applied to an optional mainline sdk LATEST.
+
+        This uses wifi as an example of a optional mainline sdk. This checks
+        that the use_source_config_var property is inserted.
+        """
+        src = read_test_data("wifi_Android.bp.input")
+
+        expected = read_test_data("wifi_latest_Android.bp.expected")
+
+        module = MAINLINE_MODULES_BY_APEX["com.android.wifi"]
+        transformations = module.transformations(mm.LATEST, mm.Sdk)
+
+        self.apply_transformations(src, transformations, mm.LATEST, expected)
+
     def test_art(self):
         """Tests the transformations applied to a the ART mainline module.
 
