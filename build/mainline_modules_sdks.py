@@ -922,8 +922,7 @@ class MainlineModule:
 
         # If the module is optional then it needs its own Soong config
         # variable to allow it to be managed separately from other modules.
-        if (self.last_optional_release and
-                self.last_optional_release > build_release):
+        if self.last_optional_release:
             config_var = ConfigVar(
                 namespace=f"{self.short_name}_module",
                 name="source_build",
