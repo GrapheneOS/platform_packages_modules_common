@@ -24,7 +24,7 @@ java_test_host {
     static_libs: [
         "junit",
         "ClasspathFetcher",
-        "truth-prebuilt",
+        "truth",
         "objenesis",
     ],
     libs: [
