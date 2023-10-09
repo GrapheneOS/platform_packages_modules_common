@@ -21,7 +21,7 @@ package {
 java_test_host {
     name: "ApkInApexTest",
     srcs: [
-        "ApkInApexTest.java"
+        "ApkInApexTest.java",
     ],
     libs: ["tradefed"],
     java_resources: [
@@ -32,7 +32,7 @@ java_test_host {
         "cts-install-lib-host",
         "frameworks-base-hostutils",
         "modules-utils-build-testing",
-        "truth-prebuilt",
+        "truth",
     ],
     test_suites: [
         "general-tests",

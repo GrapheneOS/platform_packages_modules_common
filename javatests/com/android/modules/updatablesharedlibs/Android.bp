@@ -21,7 +21,7 @@ package {
 java_test_host {
     name: "UpdatableSharedLibsTest",
     srcs: [
-        "UpdatableSharedLibsTest.java"
+        "UpdatableSharedLibsTest.java",
     ],
     libs: ["tradefed"],
     java_resources: [
@@ -37,7 +37,7 @@ java_test_host {
         "cts-install-lib-host",
         "frameworks-base-hostutils",
         "modules-utils-build-testing",
-        "truth-prebuilt",
+        "truth",
     ],
     test_suites: [
         "general-tests",
