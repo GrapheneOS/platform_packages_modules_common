@@ -23,7 +23,7 @@ android_test_helper_app {
     static_libs: [
         "androidx.test.rules",
         "androidx.test.core",
-        "truth-prebuilt",
+        "truth",
     ],
     sdk_version: "current",
     min_sdk_version: "31",
