@@ -24,13 +24,13 @@ java_test_host {
         unit_test: true,
     },
     srcs: [
-        "ClasspathFetcherTest.java"
+        "ClasspathFetcherTest.java",
     ],
     static_libs: [
         "ClasspathFetcher",
         "mockito-host",
         "objenesis",
-        "truth-prebuilt",
+        "truth",
         "junit",
         "tradefed",
     ],
