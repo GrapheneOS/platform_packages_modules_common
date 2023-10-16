@@ -355,7 +355,7 @@ apex_defaults {
 library_linking_strategy_cc_defaults {
     name: "apex-lowest-min-sdk-version",
     defaults_visibility: [
-         "//system/core/libutils",
+         "//system/core/libutils:__subpackages__",
     ],
     min_sdk_version: APEX_LOWEST_MIN_SDK_VERSION,
     soong_config_variables: {
