@@ -159,6 +159,8 @@ java_defaults {
 
     defaults_visibility: [
         ":__subpackages__",
+        // TODO(b/237461653): Move this to packages/modules/Nfc
+        "//frameworks/base/core/java",
         "//frameworks/base/apex:__subpackages__",
         "//frameworks/base/libs/hwui",
         "//frameworks/base/wifi",
