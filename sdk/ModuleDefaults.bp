@@ -133,6 +133,8 @@ java_defaults {
     },
 
     defaults_visibility: [
+        "//frameworks/base",
+        "//frameworks/base/api",
         "//packages/modules/Virtualization:__subpackages__",
     ],
 }
