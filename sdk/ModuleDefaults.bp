@@ -45,6 +45,7 @@ java_defaults {
     // TODO(b/156126315) - Remove when no longer needed.
     api_lint: {
         enabled: true,
+        legacy_errors_allowed: false,
     },
 
     // The API scope specific properties.
@@ -62,8 +63,6 @@ java_defaults {
         "--error UnhiddenSystemApi",
         "--error UnflaggedApi",
         "--hide CallbackInterface",
-        "--hide HiddenTypedefConstant",
-        "--hide RequiresPermission",
         "--enhance-documentation",
     ],
 
