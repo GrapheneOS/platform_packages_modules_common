@@ -17,14 +17,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-mainline_stubs_args =
-    "--error UnhiddenSystemApi " +
-    "--error UnflaggedApi " +
-    "--hide CallbackInterface " +
-    "--hide HiddenTypedefConstant " +
-    "--hide RequiresPermission " +
-    "--enhance-documentation "
-
 // Defaults common to all mainline module java_sdk_library instances.
 java_defaults {
     name: "framework-module-common-defaults",
@@ -66,7 +58,14 @@ java_defaults {
     installable: false,
 
     // Configure framework module specific metalava options.
-    droiddoc_options: [mainline_stubs_args],
+    droiddoc_options: [
+        "--error UnhiddenSystemApi",
+        "--error UnflaggedApi",
+        "--hide CallbackInterface",
+        "--hide HiddenTypedefConstant",
+        "--hide RequiresPermission",
+        "--enhance-documentation",
+    ],
 
     annotations_enabled: true,
 
@@ -108,6 +107,8 @@ java_defaults {
     },
 
     defaults_visibility: [
+        "//frameworks/base",
+        "//frameworks/base/api",
         "//packages/modules/Virtualization:__subpackages__",
     ],
 }
