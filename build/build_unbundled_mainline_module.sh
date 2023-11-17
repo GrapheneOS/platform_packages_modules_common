@@ -132,6 +132,7 @@ function build_modules() {
     MODULE_BUILD_FROM_SOURCE=true \
     ${extra_build_params} \
     "${RUN_ERROR_PRONE:+"RUN_ERROR_PRONE=true"}" \
+    "${CHECK_API:+"checkapi"}" \
     apps_only \
     dist \
     lint-check
