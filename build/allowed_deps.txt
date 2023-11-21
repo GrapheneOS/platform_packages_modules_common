@@ -13,6 +13,7 @@
 # See go/apex-allowed-deps-error for more details.
 # TODO(b/157465465): introduce automated quality signals and remove this list.
 
+aconfig_mediacodec_flags_c_lib(minSdkVersion:30)
 android.hardware.audio.common-V1-ndk(minSdkVersion:31)
 android.hardware.audio.common-V2-ndk(minSdkVersion:31)
 android.hardware.audio.common-V3-ndk(minSdkVersion:31)
@@ -510,6 +511,7 @@ libchrome(minSdkVersion:30)
 libcodec2(minSdkVersion:29)
 libcodec2_aidl(minSdkVersion:30)
 libcodec2_hal_common(minSdkVersion:29)
+libcodec2_hal_selection_static(minSdkVersion:29)
 libcodec2_headers(minSdkVersion:29)
 libcodec2_hidl@1.0(minSdkVersion:29)
 libcodec2_hidl@1.1(minSdkVersion:29)
