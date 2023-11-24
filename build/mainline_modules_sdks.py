@@ -708,6 +708,10 @@ class BuildRelease:
     preferHandling: PreferHandling = \
         PreferHandling.USE_SOURCE_CONFIG_VAR_PROPERTY
 
+    # Whether the generated snapshots should include flagged APIs. Defaults to
+    # false because flagged APIs are not suitable for use outside Android.
+    include_flagged_apis: bool = False
+
     def __post_init__(self):
         # The following use object.__setattr__ as this object is frozen and
         # attempting to set the fields directly would cause an exception to be
@@ -809,6 +813,15 @@ UpsideDownCake = BuildRelease(
 # Insert additional BuildRelease definitions for following releases here,
 # before LATEST.
 
+# A build release for the latest build excluding flagged apis.
+NEXT = BuildRelease(
+    name="next",
+    creator=create_latest_sdk_snapshots,
+    # There are no build release specific environment variables to pass to
+    # Soong.
+    soong_env={},
+)
+
 # The build release for the latest build supported by this build, i.e. the
 # current build. This must be the last BuildRelease defined in this script.
 LATEST = BuildRelease(
@@ -817,6 +830,9 @@ LATEST = BuildRelease(
     # There are no build release specific environment variables to pass to
     # Soong.
     soong_env={},
+    # Latest must include flagged APIs because it may be dropped into the main
+    # Android branches.
+    include_flagged_apis=True,
 )
 
 
