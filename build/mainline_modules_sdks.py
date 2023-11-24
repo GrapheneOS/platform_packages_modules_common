@@ -732,6 +732,11 @@ class BuildRelease:
                     # snapshot suitable for a specific target build release.
                     "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": self.name,
                 })
+        # Unless flagged APIs are required to be included in the snapshot then
+        # tell the build to hide them.
+        if not self.include_flagged_apis:
+            self.soong_env["SOONG_SDK_SNAPSHOT_HIDE_FLAGGED_APIS"] = "true"
+
 
     def __eq__(self, other):
         return self.ordinal == other.ordinal
