@@ -712,6 +712,9 @@ class BuildRelease:
     # false because flagged APIs are not suitable for use outside Android.
     include_flagged_apis: bool = False
 
+    # Whether the build release should generate Gantry metadata and API diff.
+    generate_gantry_metadata_and_api_diff: bool = False
+
     def __post_init__(self):
         # The following use object.__setattr__ as this object is frozen and
         # attempting to set the fields directly would cause an exception to be
@@ -825,6 +828,7 @@ NEXT = BuildRelease(
     # There are no build release specific environment variables to pass to
     # Soong.
     soong_env={},
+    generate_gantry_metadata_and_api_diff=True,
 )
 
 # The build release for the latest build supported by this build, i.e. the
@@ -838,6 +842,7 @@ LATEST = BuildRelease(
     # Latest must include flagged APIs because it may be dropped into the main
     # Android branches.
     include_flagged_apis=True,
+    generate_gantry_metadata_and_api_diff=True,
 )
 
 
@@ -1274,7 +1279,7 @@ class SdkDistProducer:
         modules = [m for m in modules if not m.is_bundled()]
         snapshots_dir = self.snapshot_builder.build_snapshots(
             build_release, modules)
-        if build_release == LATEST:
+        if build_release.generate_gantry_metadata_and_api_diff:
             target_dict = self.snapshot_builder.build_sdk_scope_targets(
                 build_release, modules)
             self.snapshot_builder.build_snapshot_gantry_metadata_and_api_diff(
@@ -1322,7 +1327,7 @@ class SdkDistProducer:
         for module in modules:
             for sdk in module.sdks:
                 sdk_dist_dir = os.path.join(build_release_dist_dir, SDK_VERSION)
-                if build_release == LATEST:
+                if build_release.generate_gantry_metadata_and_api_diff:
                     self.dist_sdk_snapshot_gantry_metadata_and_api_diff(
                         sdk_dist_dir, sdk, module, snapshots_dir)
                 self.populate_dist_snapshot(build_release, module, sdk,
