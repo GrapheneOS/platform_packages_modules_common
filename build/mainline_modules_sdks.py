@@ -1316,6 +1316,7 @@ class SdkDistProducer:
 
     def dist_generate_sdk_supported_modules_file(self, modules):
         sdk_modules_file = os.path.join(self.dist_dir, "sdk-modules.txt")
+        os.makedirs(os.path.dirname(sdk_modules_file), exist_ok=True)
         with open(sdk_modules_file, "w", encoding="utf8") as file:
             for module in modules:
                 if module in MAINLINE_MODULES:
