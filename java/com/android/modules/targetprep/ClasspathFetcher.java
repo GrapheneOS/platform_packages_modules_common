@@ -46,7 +46,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-import org.jf.dexlib2.iface.ClassDef;
+import com.android.tools.smali.dexlib2.iface.ClassDef;
 
 /*
  * Target preparer that fetches classpath relevant artifacts for a test in a 'reentrant' manner.
