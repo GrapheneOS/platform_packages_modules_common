@@ -28,6 +28,7 @@ import com.android.modules.proto.ClasspathClasses.ClasspathEntry;
 import com.android.modules.proto.ClasspathClasses.Jar;
 import com.android.modules.targetprep.ClasspathFetcher;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
+import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -47,7 +48,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import org.jf.dexlib2.iface.ClassDef;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
