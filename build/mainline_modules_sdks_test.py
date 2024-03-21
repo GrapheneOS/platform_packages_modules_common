@@ -147,6 +147,14 @@ class TestProduceDist(unittest.TestCase):
         os.mkdir(self.tmp_out_dir)
         self.tmp_dist_dir = os.path.join(self.tmp_dir, "dist")
         os.mkdir(self.tmp_dist_dir)
+        os.makedirs(
+            os.path.join(self.tmp_dir, "prebuilts/module_sdk/AdServices"),
+            exist_ok=True,
+        )
+        os.makedirs(
+            os.path.join(self.tmp_dir, "prebuilts/module_sdk/Connectivity"),
+            exist_ok=True,
+        )
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
@@ -431,11 +439,6 @@ class TestProduceDist(unittest.TestCase):
             snapshot_builder=snapshot_builder,
             dist_dir=self.tmp_dist_dir,
         )
-        producer = mm.SdkDistProducer(
-            subprocess_runner=subprocess_runner,
-            snapshot_builder=snapshot_builder,
-            dist_dir=self.tmp_dist_dir,
-        )
 
         # Contains only sdk modules.
         modules = [
@@ -460,7 +463,7 @@ class TestProduceDist(unittest.TestCase):
                 first_release="",
             ),
             mm.MainlineModule(
-                apex="com.android.adbd",
+                apex="com.android.extservices",
                 sdks=[],
                 first_release="",
             ),
@@ -482,7 +485,7 @@ class TestProduceDist(unittest.TestCase):
                 first_release="",
             ),
             mm.MainlineModule(
-                apex="com.android.adbd",
+                apex="com.android.extservices",
                 sdks=[],
                 first_release="",
             ),
@@ -496,6 +499,51 @@ class TestProduceDist(unittest.TestCase):
         self.assertTrue("com.google.android.mediaprovider\n" in sdk_modules)
         self.assertFalse("com.google.android.adbd\n" in sdk_modules)
         self.assertFalse("com.google.android.extservices\n" in sdk_modules)
+
+    def test_generate_mainline_modules_info_file(self):
+        subprocess_runner = mm.SubprocessRunner()
+        snapshot_builder = FakeSnapshotBuilder(
+            tool_path="path/to/mainline_modules_sdks.sh",
+            subprocess_runner=subprocess_runner,
+            out_dir=self.tmp_out_dir,
+        )
+        producer = mm.SdkDistProducer(
+            subprocess_runner=subprocess_runner,
+            snapshot_builder=snapshot_builder,
+            dist_dir=self.tmp_dist_dir,
+        )
+
+        modules = [
+            MAINLINE_MODULES_BY_APEX["com.android.adservices"],
+            MAINLINE_MODULES_BY_APEX["com.android.tethering"],
+            mm.MainlineModule(
+                apex="com.android.adbd",
+                sdks=[],
+                first_release="",
+            ),
+        ]
+
+        producer.generate_mainline_modules_info_file(modules, self.tmp_dir)
+        with open(
+            os.path.join(self.tmp_dist_dir, "mainline-modules-info.json"),
+            "r",
+            encoding="utf8",
+        ) as mainline_modules_info_file:
+            mainline_modules_info = json.load(mainline_modules_info_file)
+
+        self.assertEqual(
+            mainline_modules_info["com.google.android.adservices"][
+                "module_sdk_project"
+            ],
+            "prebuilts/module_sdk/AdServices",
+        )
+        self.assertEqual(
+            mainline_modules_info["com.google.android.tethering"][
+                "module_sdk_project"
+            ],
+            "prebuilts/module_sdk/Connectivity",
+        )
+        self.assertFalse("adbd" in mainline_modules_info)
 
 
 def path_to_test_data(relative_path):

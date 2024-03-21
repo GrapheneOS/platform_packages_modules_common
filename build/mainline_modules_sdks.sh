@@ -45,7 +45,7 @@ function main() {
   # Assign to a variable and eval that, since bash ignores any error status from
   # the command substitution if it's directly on the eval line.
   vars="$(TARGET_PRODUCT='' build/soong/soong_ui.bash --dumpvars-mode \
-    --vars="BUILD_NUMBER DIST_DIR OUT_DIR")"
+    --vars="DIST_DIR OUT_DIR")"
   eval "${vars}"
 
   # Building with --soong-only and module products requires build_number.txt for

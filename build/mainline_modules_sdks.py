@@ -26,6 +26,7 @@ import functools
 import io
 import json
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -304,6 +305,39 @@ def set_default_timestamp(base_dir, paths):
         timestamp = default_zip_time.timestamp()
         p = os.path.join(base_dir, path)
         os.utime(p, (timestamp, timestamp))
+
+
+# Find the git project path of the module_sdk for given module.
+def module_sdk_project_for_module(module, root_dir):
+    module = module.rsplit(".", 1)[1]
+    # git_master-art and aosp-master-art branches does not contain project for
+    # art, hence adding special case for art.
+    if module == "art":
+        return "prebuilts/module_sdk/art"
+    if module == "btservices":
+        return "prebuilts/module_sdk/Bluetooth"
+    if module == "media":
+        return "prebuilts/module_sdk/Media"
+    if module == "rkpd":
+        return "prebuilts/module_sdk/RemoteKeyProvisioning"
+    if module == "tethering":
+        return "prebuilts/module_sdk/Connectivity"
+
+    target_dir = ""
+    for dir in os.listdir(os.path.join(root_dir, "prebuilts/module_sdk/")):
+        if module.lower() in dir.lower():
+            if target_dir:
+                print(
+                    'Multiple target dirs matched "%s": %s'
+                    % (module, (target_dir, dir))
+                )
+                sys.exit(1)
+            target_dir = dir
+    if not target_dir:
+        print("Could not find a target dir for %s" % module)
+        sys.exit(1)
+
+    return "prebuilts/module_sdk/%s" % target_dir
 
 
 @dataclasses.dataclass()
@@ -1339,6 +1373,25 @@ class SdkDistProducer:
                 if module in MAINLINE_MODULES:
                     file.write(aosp_to_google_name(module.apex) + "\n")
 
+    def generate_mainline_modules_info_file(self, modules, root_dir):
+        mainline_modules_info_file = os.path.join(
+            self.dist_dir, "mainline-modules-info.json"
+        )
+        os.makedirs(os.path.dirname(mainline_modules_info_file), exist_ok=True)
+        mainline_modules_info_dict = {}
+        for module in modules:
+            if module not in MAINLINE_MODULES:
+                continue
+
+            module = aosp_to_google_name(module.apex)
+            mainline_modules_info_dict[module] = dict()
+            mainline_modules_info_dict[module]["module_sdk_project"] = (
+                module_sdk_project_for_module(module, root_dir)
+            )
+
+        with open(mainline_modules_info_file, "w", encoding="utf8") as file:
+            json.dump(mainline_modules_info_dict, file, indent=4)
+
     def populate_unbundled_dist(self, build_release, modules, snapshots_dir):
         build_release_dist_dir = os.path.join(self.mainline_sdks_dir,
                                               build_release.sub_dir)
@@ -1609,6 +1662,9 @@ def main(args):
 
     producer = create_producer(args.tool_path, args.skip_allowed_deps_check)
     producer.dist_generate_sdk_supported_modules_file(modules)
+    producer.generate_mainline_modules_info_file(
+        modules, os.environ["ANDROID_BUILD_TOP"]
+    )
     producer.produce_dist(modules, build_releases)
 
 
