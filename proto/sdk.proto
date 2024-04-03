@@ -56,6 +56,9 @@ enum SdkModule {
   CONFIG_INFRASTRUCTURE = 15;
   HEALTH_FITNESS = 16;
   // REMOTE_KEY_PROVISIONING - optional
+
+  // V modules
+  // No new modules introduced in V
 }
 
 // A single extension version.
