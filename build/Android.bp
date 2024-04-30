@@ -50,7 +50,6 @@ phony {
         "com.android.healthfitness",
         "com.android.i18n",
         "com.android.ipsec",
-        "com.android.location.provider",
         "com.android.media",
         "com.android.media.swcodec",
         "com.android.mediaprovider",
