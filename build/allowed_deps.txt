@@ -14,6 +14,7 @@
 # TODO(b/157465465): introduce automated quality signals and remove this list.
 
 aconfig_mediacodec_flags_c_lib(minSdkVersion:30)
+android.content.pm.flags-aconfig-java-export(minSdkVersion:30)
 android.hardware.audio.common-V1-ndk(minSdkVersion:31)
 android.hardware.audio.common-V2-ndk(minSdkVersion:31)
 android.hardware.audio.common-V3-ndk(minSdkVersion:31)
@@ -379,7 +380,6 @@ dlmalloc(minSdkVersion:apex_inherit)
 dnsproxyd_protocol_headers(minSdkVersion:29)
 dnsproxyd_protocol_headers(minSdkVersion:30)
 DocumentsUI-lib(minSdkVersion:29)
-DocumentsUI-res-lib(minSdkVersion:29)
 DocumentsUIManifestLib(minSdkVersion:29)
 ethtool(minSdkVersion:30)
 exoplayer-annotation_stubs(minSdkVersion:19)
