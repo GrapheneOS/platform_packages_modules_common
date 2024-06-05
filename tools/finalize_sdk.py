@@ -2,6 +2,7 @@
 
 import argparse
 import glob
+import json
 import os
 import re
 import shlex
@@ -27,6 +28,8 @@ BUILD_TARGET_CONTINUOUS_MAIN = 'mainline_modules_sdks-{release_config}-userdebug
 ARTIFACT_PATTERN = 'mainline-sdks/for-next-build/current/{module_name}/sdk/*.zip'
 # The glob of sdk artifacts to fetch from local build
 ARTIFACT_LOCAL_PATTERN = 'out/dist/mainline-sdks/for-next-build/current/{module_name}/sdk/*.zip'
+ARTIFACT_MODULES_INFO = 'mainline-modules-info.json'
+ARTIFACT_LOCAL_MODULES_INFO = 'out/dist/mainline-modules-info.json'
 COMMIT_TEMPLATE = """Finalize artifacts for extension SDK %d
 
 Import from build id %s.
@@ -40,6 +43,31 @@ Test: presubmit"""
 def fail(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
     sys.exit(1)
+
+def fetch_mainline_modules_info_artifact(target, build_id):
+    tmpdir = Path(tempfile.TemporaryDirectory().name)
+    tmpdir.mkdir()
+    if args.local_mode:
+        artifact_path = ARTIFACT_LOCAL_MODULES_INFO
+        print('Copying %s to %s ...' % (artifact_path, tmpdir))
+        shutil.copy(artifact_path, tmpdir)
+    else:
+        artifact_path = ARTIFACT_MODULES_INFO
+        print('Fetching %s from %s ...' % (artifact_path, target))
+        fetch_cmd = [FETCH_ARTIFACT]
+        fetch_cmd.extend(['--bid', str(build_id)])
+        fetch_cmd.extend(['--target', target])
+        fetch_cmd.append(artifact_path)
+        fetch_cmd.append(str(tmpdir))
+        print("Running: " + ' '.join(fetch_cmd))
+        try:
+            subprocess.check_output(fetch_cmd, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError:
+            fail(
+                'FAIL: Unable to retrieve %s artifact for build ID %s for %s target'
+                % (artifact_path, build_id, target)
+            )
+    return os.path.join(tmpdir, ARTIFACT_MODULES_INFO)
 
 def fetch_artifacts(target, build_id, module_name):
     tmpdir = Path(tempfile.TemporaryDirectory().name)
@@ -61,25 +89,23 @@ def fetch_artifacts(target, build_id, module_name):
         try:
             subprocess.check_output(fetch_cmd, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError:
-            fail('FAIL: Unable to retrieve %s artifact for build ID %s' % (artifact_path, build_id))
+            fail(
+                "FAIL: Unable to retrieve %s artifact for build ID %s"
+                % (artifact_path, build_id)
+            )
     return tmpdir
 
-def repo_for_sdk(filename):
-    module = filename.split('-')[0]
-    target_dir = ''
-    if module == 'btservices': return Path('prebuilts/module_sdk/Bluetooth')
-    if module == 'media': return Path('prebuilts/module_sdk/Media')
-    if module == 'rkpd': return Path('prebuilts/module_sdk/RemoteKeyProvisioning')
-    if module == 'tethering': return Path('prebuilts/module_sdk/Connectivity')
-    for dir in os.listdir('prebuilts/module_sdk/'):
-        if module.lower() in dir.lower():
-            if target_dir:
-                fail('Multiple target dirs matched "%s": %s' % (module, (target_dir, dir)))
-            target_dir = dir
-    if not target_dir:
-        fail('Could not find a target dir for %s' % filename)
+def repo_for_sdk(module, mainline_modules_info):
+    if module not in mainline_modules_info:
+        fail(
+            '"%s" module not found "%s" in mainline_modules_info json' % module
+        )
 
-    return Path('prebuilts/module_sdk/%s' % target_dir)
+    print(
+        f"module_sdk_path for {module}:"
+        f" {mainline_modules_info[module]['module_sdk_project']}"
+    )
+    return Path(mainline_modules_info[module]["module_sdk_project"])
 
 def dir_for_sdk(filename, version):
     base = str(version)
@@ -137,10 +163,14 @@ if compat_dir.is_dir():
     shutil.rmtree(compat_dir)
 
 created_dirs = defaultdict(set)
+mainline_modules_info_file = fetch_mainline_modules_info_artifact(build_target, args.bid)
+with open(mainline_modules_info_file, "r", encoding="utf8",) as file:
+    mainline_modules_info = json.load(file)
+
 for m in module_names:
     tmpdir = fetch_artifacts(build_target, args.bid, m)
+    repo = repo_for_sdk(m, mainline_modules_info)
     for f in tmpdir.iterdir():
-        repo = repo_for_sdk(f.name)
         dir = dir_for_sdk(f.name, args.finalize_sdk)
         target_dir = repo.joinpath(dir)
         if target_dir.is_dir():
