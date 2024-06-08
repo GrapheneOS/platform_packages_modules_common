@@ -26,6 +26,8 @@ message SdkVersion {
 // The only modules that should be listed here are non-optional modules that
 // have Java APIs, i.e. their APEX contains a bootclaspath_fragment or a
 // systemserverclasspath_fragment.
+// Add every entry made in this enum to the corresponding MainlineModule
+// defined in packages/modules/common/build/mainline_modules_sdks.py
 enum SdkModule {
   UNKNOWN = 0;
 

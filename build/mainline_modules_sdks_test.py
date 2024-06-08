@@ -531,18 +531,19 @@ class TestProduceDist(unittest.TestCase):
         ) as mainline_modules_info_file:
             mainline_modules_info = json.load(mainline_modules_info_file)
 
+        module_json = mainline_modules_info["com.google.android.adservices"]
         self.assertEqual(
-            mainline_modules_info["com.google.android.adservices"][
-                "module_sdk_project"
-            ],
-            "prebuilts/module_sdk/AdServices",
+            module_json["module_sdk_project"], "prebuilts/module_sdk/AdServices"
         )
+        self.assertEqual(module_json["module_proto_key"], "AD_SERVICES")
+
+        module_json = mainline_modules_info["com.google.android.tethering"]
         self.assertEqual(
-            mainline_modules_info["com.google.android.tethering"][
-                "module_sdk_project"
-            ],
+            module_json["module_sdk_project"],
             "prebuilts/module_sdk/Connectivity",
         )
+        self.assertEqual(module_json["module_proto_key"], "TETHERING")
+
         self.assertFalse("adbd" in mainline_modules_info)
 
 
