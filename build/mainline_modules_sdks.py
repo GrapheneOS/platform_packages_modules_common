@@ -1414,6 +1414,8 @@ class SdkDistProducer:
             mainline_modules_info_dict[module_name][
                 "module_proto_key"
             ] = module.module_proto_key
+            # The first sdk in the list is the name to use.
+            mainline_modules_info_dict[module_name]["sdk_name"] = module.sdks[0]
 
         with open(mainline_modules_info_file, "w", encoding="utf8") as file:
             json.dump(mainline_modules_info_dict, file, indent=4)

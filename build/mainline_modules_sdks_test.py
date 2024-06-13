@@ -536,6 +536,7 @@ class TestProduceDist(unittest.TestCase):
             module_json["module_sdk_project"], "prebuilts/module_sdk/AdServices"
         )
         self.assertEqual(module_json["module_proto_key"], "AD_SERVICES")
+        self.assertEqual(module_json["sdk_name"], "adservices-module-sdk")
 
         module_json = mainline_modules_info["com.google.android.tethering"]
         self.assertEqual(
@@ -543,6 +544,7 @@ class TestProduceDist(unittest.TestCase):
             "prebuilts/module_sdk/Connectivity",
         )
         self.assertEqual(module_json["module_proto_key"], "TETHERING")
+        self.assertEqual(module_json["sdk_name"], "tethering-module-sdk")
 
         self.assertFalse("adbd" in mainline_modules_info)
 

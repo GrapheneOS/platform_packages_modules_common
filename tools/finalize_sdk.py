@@ -95,18 +95,17 @@ def fetch_artifacts(target, build_id, module_name):
             )
     return tmpdir
 
-def repo_for_sdk(module, mainline_modules_info):
-    if module not in mainline_modules_info:
-        fail(
-            '"%s" module not found "%s" in mainline_modules_info json' % module
-        )
+def repo_for_sdk(sdk_filename, mainline_modules_info):
+    for module in mainline_modules_info:
+        if mainline_modules_info[module]["sdk_name"] in sdk_filename:
+            project_path = mainline_modules_info[module]["module_sdk_project"]
+            if args.gantry_mode:
+                project_path = "/tmp/" + project_path
+                os.makedirs(project_path , exist_ok = True, mode = 0o777)
+            print(f"module_sdk_path for {module}: {project_path}")
+            return Path(project_path)
 
-    project_path = mainline_modules_info[module]["module_sdk_project"]
-    if args.gantry_mode:
-        project_path = "/tmp/" + project_path
-        os.makedirs(project_path , exist_ok = True, mode = 0o777)
-    print(f"module_sdk_path for {module}: {project_path}")
-    return Path(project_path)
+    fail('"%s" has no valid mapping to any mainline module.' % sdk_filename)
 
 def dir_for_sdk(filename, version):
     base = str(version)
@@ -173,8 +172,8 @@ with open(mainline_modules_info_file, "r", encoding="utf8",) as file:
 
 for m in module_names:
     tmpdir = fetch_artifacts(build_target, args.bid, m)
-    repo = repo_for_sdk(m, mainline_modules_info)
     for f in tmpdir.iterdir():
+        repo = repo_for_sdk(f.name, mainline_modules_info)
         dir = dir_for_sdk(f.name, args.finalize_sdk)
         target_dir = repo.joinpath(dir)
         if target_dir.is_dir():
