@@ -21,6 +21,9 @@ def get_deps(allowed_deps):
   for line in allowed_deps:
     if line.startswith('#'):
       continue
+    # Allowlist androidx deps
+    if line.startswith("androidx."):
+      continue
     if len(line.strip()) == 0:
       continue
     dep = line[:line.find("(")]
