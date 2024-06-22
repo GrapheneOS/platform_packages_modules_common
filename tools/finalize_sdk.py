@@ -99,7 +99,7 @@ def repo_for_sdk(sdk_filename, mainline_modules_info):
     for module in mainline_modules_info:
         if mainline_modules_info[module]["sdk_name"] in sdk_filename:
             project_path = mainline_modules_info[module]["module_sdk_project"]
-            if args.gantry_mode:
+            if args.mainline_modules_info_path:
                 project_path = "/tmp/" + project_path
                 os.makedirs(project_path , exist_ok = True, mode = 0o777)
             print(f"module_sdk_path for {module}: {project_path}")
@@ -143,11 +143,11 @@ parser.add_argument('-r', '--readme', required=True, help='Version history entry
 parser.add_argument('-a', '--amend_last_commit', action="store_true", help='Amend current HEAD commits instead of making new commits.')
 parser.add_argument('-m', '--modules', action='append', help='Modules to include. Can be provided multiple times, or not at all for all modules.')
 parser.add_argument('-l', '--local_mode', action="store_true", help='Local mode: use locally built artifacts and don\'t upload the result to Gerrit.')
-parser.add_argument('-g', '--gantry_mode', action="store_true", help='Script executed via Gantry in google3.')
+parser.add_argument('-p', '--mainline_modules_info_path', type=str, help='Mainline modules info file path. Only required when executed via Gantry/google3')
 parser.add_argument('bid', help='Build server build ID')
 args = parser.parse_args()
 
-if not os.path.isdir('build/soong') and not args.gantry_mode:
+if not os.path.isdir('build/soong') and not args.mainline_modules_info_path:
     fail("This script must be run from the top of an Android source tree.")
 
 if args.release_config:
@@ -158,7 +158,7 @@ cmdline = shlex.join([x for x in sys.argv if x not in ['-a', '--amend_last_commi
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
 module_names = args.modules or ['*']
 
-if args.gantry_mode:
+if args.mainline_modules_info_path:
     COMPAT_REPO = Path('/tmp/') / COMPAT_REPO
 compat_dir = COMPAT_REPO.joinpath('extensions/%d' % args.finalize_sdk)
 if compat_dir.is_dir():
@@ -166,7 +166,10 @@ if compat_dir.is_dir():
     shutil.rmtree(compat_dir)
 
 created_dirs = defaultdict(set)
-mainline_modules_info_file = fetch_mainline_modules_info_artifact(build_target, args.bid)
+if args.mainline_modules_info_path:
+    mainline_modules_info_file = args.mainline_modules_info_path
+else:
+    mainline_modules_info_file = fetch_mainline_modules_info_artifact(build_target, args.bid)
 with open(mainline_modules_info_file, "r", encoding="utf8",) as file:
     mainline_modules_info = json.load(file)
 
@@ -205,7 +208,7 @@ if args.local_mode:
     sys.exit(0)
 
 # Do not commit any changes when the script is executed via Gantry.
-if args.gantry_mode:
+if args.mainline_modules_info_path:
     sys.exit(0)
 
 subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
