@@ -152,7 +152,6 @@ module_names = args.modules or ['*']
 if args.gantry_download_dir:
     args.gantry_download_dir = Path(args.gantry_download_dir)
     COMPAT_REPO = args.gantry_download_dir / COMPAT_REPO
-    FETCH_ARTIFACT = str(args.gantry_download_dir / "fetch_artifact")
     mainline_modules_info_file = args.gantry_download_dir / ARTIFACT_MODULES_INFO
 else:
     mainline_modules_info_file = fetch_mainline_modules_info_artifact(build_target, args.bid)
@@ -167,7 +166,10 @@ with open(mainline_modules_info_file, "r", encoding="utf8",) as file:
     mainline_modules_info = json.load(file)
 
 for m in module_names:
-    tmpdir = fetch_module_sdk_artifacts(build_target, args.bid, m)
+    if args.gantry_download_dir:
+        tmpdir = args.gantry_download_dir / "sdk_artifacts"
+    else:
+        tmpdir = fetch_module_sdk_artifacts(build_target, args.bid, m)
     for f in tmpdir.iterdir():
         repo = repo_for_sdk(f.name, mainline_modules_info)
         dir = dir_for_sdk(f.name, args.finalize_sdk)
