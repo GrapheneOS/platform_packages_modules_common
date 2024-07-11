@@ -12,11 +12,8 @@
 include platform/packages/modules/common:/MODULES_OWNERS
 marielos@google.com #{LAST_RESORT_SUGGESTION}
 pranavgupta@google.com #{LAST_RESORT_SUGGESTION}
-mattcarp@google.com #{LAST_RESORT_SUGGESTION}
 ahomer@google.com #{LAST_RESORT_SUGGESTION}
 robertogil@google.com #{LAST_RESORT_SUGGESTION}
-paulduffin@google.com #{LAST_RESORT_SUGGESTION}
-amhk@google.com #{LAST_RESORT_SUGGESTION}
 gurpreetgs@google.com #{LAST_RESORT_SUGGESTION}
-hsnali@google.com #{LAST_RESORT_SUGGESTION}
 kalyssa@google.com #{LAST_RESORT_SUGGESTION}
+psych@google.com #{LAST_RESORT_SUGGESTION}
