@@ -38,7 +38,6 @@ python_test_host {
 phony {
     name: "aosp_mainline_modules",
     required: [
-        "com.android.art",
         "com.android.adbd",
         "com.android.adservices",
         "com.android.appsearch",
@@ -66,7 +65,13 @@ phony {
         "com.android.uwb",
         "com.android.virt",
         "com.android.wifi",
-    ],
+    ] + select(product_variable("use_debug_art"), {
+        true: [
+            "com.android.art.debug",
+        ],
+        default: [
+            "com.android.art",
+        ],
+    }),
     visibility: ["//visibility:any_system_partition"],
 }
-
