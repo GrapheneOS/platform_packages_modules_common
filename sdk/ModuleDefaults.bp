@@ -285,6 +285,16 @@ apex_defaults {
     defaults_visibility: ["//packages/modules:__subpackages__"],
 }
 
+apex_defaults {
+    name: "b-launched-apex-module",
+    defaults: ["any-launched-apex-modules"],
+    min_sdk_version: "Baklava",
+    // Indicates that pre-installed version of this apex can be compressed.
+    // Whether it actually will be compressed is controlled on per-device basis.
+    compressible: true,
+    defaults_visibility: ["//packages/modules:__subpackages__"],
+}
+
 library_linking_strategy_cc_defaults {
     name: "apex-lowest-min-sdk-version",
     defaults_visibility: [
