@@ -23,7 +23,7 @@ android_test_helper_app {
     name: "com.android.modules.updatablesharedlibs.apps.targetTWithLib",
     srcs: ["UpdatableSharedLibraryTargetTWithLibraryTest.java"],
     libs: [
-        "com.android.modules.updatablesharedlibs.libs.since.t",
+        "com.android.modules.updatablesharedlibs.libs.since.t.stubs",
     ],
     static_libs: [
         "androidx.test.rules",
