@@ -14,6 +14,7 @@
 # TODO(b/157465465): introduce automated quality signals and remove this list.
 
 aconfig_mediacodec_flags_c_lib(minSdkVersion:30)
+android.app.appfunctions.exported-flags-aconfig-java(minSdkVersion:30)
 android.companion.virtualdevice.flags-aconfig-java-export(minSdkVersion:30)
 android.content.pm.flags-aconfig-java-export(minSdkVersion:30)
 android.hardware.audio.common-V1-ndk(minSdkVersion:31)
