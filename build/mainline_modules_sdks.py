@@ -1271,7 +1271,10 @@ MAINLINE_MODULES = [
     ),
     MainlineModule(
         apex="com.android.sdkext",
-        sdks=["sdkextensions-sdk"],
+        sdks=[
+            "sdkextensions-sdk",
+            "sdkextensions-host-exports",
+        ],
         first_release=R,
         for_r_build=ForRBuild(sdk_libraries=[
             SdkLibrary(name="framework-sdkextensions"),
@@ -1526,9 +1529,12 @@ class SdkDistProducer:
         sdk_type = sdk_type_from_name(sdk)
         subdir = sdk_type.name
 
+        # HostExports are not needed for R.
+        if build_release == R and sdk_type == HostExports:
+            return
+
         sdk_dist_subdir = os.path.join(sdk_dist_dir, module.apex, subdir)
         sdk_path = sdk_snapshot_zip_file(snapshots_dir, sdk)
-        sdk_type = sdk_type_from_name(sdk)
         transformations = module.transformations(build_release, sdk_type)
         self.dist_sdk_snapshot_zip(
             build_release, sdk_path, sdk_dist_subdir, transformations)

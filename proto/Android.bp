@@ -56,6 +56,7 @@ python_library_host {
 
 cc_library_static {
     name: "libclasspaths_proto",
+    host_supported: true,
     proto: {
         export_proto_headers: true,
         type: "lite",

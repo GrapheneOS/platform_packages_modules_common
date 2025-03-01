@@ -15,6 +15,9 @@ AllowedDepsTxt = "build/allowed_deps.txt"
 DisableAllowedDepsCheckKey = "No-Allowed-Deps-Check"
 ExpectedKeys = set(["Apex-Size-Increase", "Previous-Platform-Support", "Aosp-First", "Test-Info"])
 
+def is_aconfig_dep(dep: str):
+  return bool(re.search(r"aconfig(d)?[-_]", dep))
+
 def get_deps(allowed_deps):
   """ Parse allowed_deps.txt contents returning just dependency names """
   deps = set()
@@ -23,6 +26,9 @@ def get_deps(allowed_deps):
       continue
     # Allowlist androidx deps
     if line.startswith("androidx."):
+      continue
+    # Allowlist aconfig deps
+    if is_aconfig_dep(line):
       continue
     if len(line.strip()) == 0:
       continue
