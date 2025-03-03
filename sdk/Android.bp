@@ -294,7 +294,7 @@ apex_defaults {
 apex_defaults {
     name: "b-launched-apex-module",
     defaults: ["any-launched-apex-modules"],
-    min_sdk_version: "Baklava",
+    min_sdk_version: "36",
     // Indicates that pre-installed version of this apex can be compressed.
     // Whether it actually will be compressed is controlled on per-device basis.
     compressible: true,
