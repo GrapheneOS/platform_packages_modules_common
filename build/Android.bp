@@ -27,11 +27,6 @@ python_test_host {
     data: [
         "mainline_modules_sdks_test_data/**/*",
     ],
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
     test_suites: ["general-tests"],
 }
 

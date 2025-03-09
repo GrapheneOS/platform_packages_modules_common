@@ -21,11 +21,6 @@ package {
 
 python_defaults {
     name: "modules-common-tools-python-defaults",
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
 }
 
 python_binary_host {
