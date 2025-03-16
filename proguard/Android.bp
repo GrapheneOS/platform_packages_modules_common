@@ -17,7 +17,13 @@ package {
     default_visibility: [
         ":__subpackages__",
         "//art/libartservice:__subpackages__",
+        "//frameworks/base:__subpackages__",
+        "//frameworks/opt:__subpackages__",
+        "//libcore:__subpackages__",
         "//packages/modules:__subpackages__",
+        "//packages/providers/MediaProvider:__subpackages__",
+        "//system/apex/apexd:__subpackages__",
+
     ],
 }
 
@@ -62,4 +68,11 @@ java_defaults {
         ignore_warnings: false,
         proguard_flags_files: [":standalone-system-server-module-optimize-proguard-rules"],
     },
+}
+
+filegroup {
+    name: "framework-sdk-proguard-rules",
+    srcs: [
+        "framework-sdk.pro",
+    ],
 }

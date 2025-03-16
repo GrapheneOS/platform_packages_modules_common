@@ -58,6 +58,13 @@ java_defaults {
     // we shouldn't ordinarily need (and it can create issues), so disable that.
     installable: false,
 
+    optimize: {
+        // Note that we don't enable optimizations by default, but we do
+        // bundle an additional set of Proguard rules that should always
+        // be used downstream for selectively optimized targets.
+        proguard_flags_files: [":framework-sdk-proguard-rules"],
+    },
+
     // Configure framework module specific metalava options.
     droiddoc_options: [
         "--error UnhiddenSystemApi",
