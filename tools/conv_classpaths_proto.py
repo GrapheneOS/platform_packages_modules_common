@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import argparse
+import sys
 
 import classpaths_pb2
 
