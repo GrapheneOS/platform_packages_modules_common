@@ -136,6 +136,7 @@ parser.add_argument('-g', '--gantry_download_dir', type=str, help=argparse.SUPPR
 parser.add_argument('-l', '--local_mode', action="store_true", help='Local mode: use locally built artifacts and don\'t upload the result to Gerrit.')
 parser.add_argument('-m', '--modules', action='append', help='Modules to include. Can be provided multiple times, or not at all for all modules.')
 parser.add_argument('-r', '--readme', required=True, help='Version history entry to add to %s' % (COMPAT_REPO / COMPAT_README))
+parser.add_argument('-t', '--topic_branch', type=str, help='Name of the topic branch "repo start" will create.')
 parser.add_argument('bid', help='Build server build ID')
 args = parser.parse_args()
 
@@ -145,7 +146,7 @@ if not os.path.isdir('build/soong') and not args.gantry_download_dir:
 if args.release_config:
     BUILD_TARGET_CONTINUOUS = BUILD_TARGET_CONTINUOUS_MAIN.format(release_config=args.release_config)
 build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTINUOUS
-branch_name = 'finalize-%d' % args.finalize_sdk
+topic_branch = 'finalize-%d' % args.finalize_sdk if args.topic_branch is None else args.topic_branch
 cmdline = shlex.join([x for x in sys.argv if x not in ['-a', '--amend_last_commit', '-l', '--local_mode']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
 module_names = args.modules or ['*']
@@ -210,7 +211,7 @@ if args.gantry_download_dir:
 if args.dry_run:
     sys.exit(0)
 
-subprocess.check_output(['repo', 'start', branch_name] + list(created_dirs.keys()))
+subprocess.check_output(['repo', 'start', topic_branch] + list(created_dirs.keys()))
 print('Running git commit')
 for repo in created_dirs:
     git = ['git', '-C', str(repo)]
