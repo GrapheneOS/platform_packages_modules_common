@@ -137,15 +137,19 @@ parser.add_argument('-l', '--local_mode', action="store_true", help='Local mode:
 parser.add_argument('-m', '--modules', action='append', help='Modules to include. Can be provided multiple times, or not at all for all modules.')
 parser.add_argument('-r', '--readme', required=True, help='Version history entry to add to %s' % (COMPAT_REPO / COMPAT_README))
 parser.add_argument('-t', '--topic_branch', type=str, help='Name of the topic branch "repo start" will create.')
+parser.add_argument('--build_target', type=str, help=f'Which build target to download targets from (e.g. "{BUILD_TARGET_CONTINUOUS}"); used together with the <bid> argument. If not provided, will calculate a default value based on the <release_config> argument.')
 parser.add_argument('bid', help='Build server build ID')
 args = parser.parse_args()
 
 if not os.path.isdir('build/soong') and not args.gantry_download_dir:
     fail("This script must be run from the top of an Android source tree.")
 
-if args.release_config:
+if args.build_target:
+    BUILD_TARGET_CONTINUOUS = args.build_target
+elif args.release_config:
     BUILD_TARGET_CONTINUOUS = BUILD_TARGET_CONTINUOUS_MAIN.format(release_config=args.release_config)
 build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTINUOUS
+build_target = "mainline_modules_sdks-user"
 topic_branch = 'finalize-%d' % args.finalize_sdk if args.topic_branch is None else args.topic_branch
 cmdline = shlex.join([x for x in sys.argv if x not in ['-a', '--amend_last_commit', '-l', '--local_mode']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
