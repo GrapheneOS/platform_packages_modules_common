@@ -63,6 +63,10 @@ java_defaults {
         // bundle an additional set of Proguard rules that should always
         // be used downstream for selectively optimized targets.
         proguard_flags_files: [":framework-sdk-proguard-rules"],
+
+        // Disallow access modification during optimization that would promote
+        // members into the public or protected API surface.
+        protect_api_surface: true,
     },
 
     // Configure framework module specific metalava options.
