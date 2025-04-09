@@ -149,7 +149,6 @@ if args.build_target:
 elif args.release_config:
     BUILD_TARGET_CONTINUOUS = BUILD_TARGET_CONTINUOUS_MAIN.format(release_config=args.release_config)
 build_target = BUILD_TARGET_TRAIN if args.bid[0] == 'T' else BUILD_TARGET_CONTINUOUS
-build_target = "mainline_modules_sdks-user"
 topic_branch = 'finalize-%d' % args.finalize_sdk if args.topic_branch is None else args.topic_branch
 cmdline = shlex.join([x for x in sys.argv if x not in ['-a', '--amend_last_commit', '-l', '--local_mode']])
 commit_message = COMMIT_TEMPLATE % (args.finalize_sdk, args.bid, cmdline, args.bug)
