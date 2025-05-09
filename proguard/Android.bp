@@ -47,6 +47,9 @@ filegroup {
     ],
 }
 
+// Defaults for jars on PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS. These jars
+// have a single entry point in SystemServer.java, and can be easily shrunk
+// based on a single keep rule.
 java_defaults {
     name: "standalone-system-server-module-optimize-defaults",
     optimize: {
