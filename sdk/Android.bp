@@ -142,18 +142,7 @@ java_defaults {
         sdk_version: "module_current",
     },
 
-    defaults_visibility: [
-        ":__subpackages__",
-        // TODO(b/237461653): Move this to packages/modules/Nfc
-        "//frameworks/base/nfc",
-        "//frameworks/base/apex:__subpackages__",
-        "//frameworks/base/libs/hwui",
-        "//frameworks/base/packages/Vcn:__subpackages__",
-        "//frameworks/base/wifi",
-        "//packages/modules:__subpackages__",
-        "//packages/providers/MediaProvider:__subpackages__",
-        "//system/apex/apexd:__subpackages__",
-    ],
+    defaults_visibility: ["//visibility:public"],
 }
 
 // Defaults for mainline module system server provided java_sdk_library instances.
@@ -167,14 +156,7 @@ java_defaults {
         sdk_version: "system_server_current",
     },
 
-    defaults_visibility: [
-        ":__subpackages__",
-        "//art/libartservice:__subpackages__",
-        "//frameworks/base/apex:__subpackages__",
-        "//frameworks/base/packages/Vcn:__subpackages__",
-        "//packages/modules:__subpackages__",
-        "//system/apex/apexd:__subpackages__",
-    ],
+    defaults_visibility: ["//visibility:public"],
 }
 
 filegroup_defaults {

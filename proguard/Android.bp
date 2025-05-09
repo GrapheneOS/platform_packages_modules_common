@@ -14,17 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_visibility: [
-        ":__subpackages__",
-        "//art/libartservice:__subpackages__",
-        "//frameworks/base:__subpackages__",
-        "//frameworks/opt:__subpackages__",
-        "//libcore:__subpackages__",
-        "//packages/modules:__subpackages__",
-        "//packages/providers/MediaProvider:__subpackages__",
-        "//system/apex/apexd:__subpackages__",
-
-    ],
+    default_visibility: ["//visibility:public"],
 }
 
 // Needed because otherwise java_defaults would resolve it in module directory.
