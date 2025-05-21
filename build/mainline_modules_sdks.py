@@ -21,6 +21,7 @@ the APEXes in it are built, otherwise all configured SDKs are built.
 import argparse
 import dataclasses
 import datetime
+import difflib
 import enum
 import functools
 import io
@@ -284,6 +285,11 @@ class SubprocessRunner:
     def run(self, *args, **kwargs):
         return subprocess.run(
             *args, check=True, stdout=self.stdout, stderr=self.stderr, **kwargs)
+
+
+def unified_diff(a, b, label_a, label_b):
+    diff = difflib.unified_diff(a.splitlines(keepends=True), b.splitlines(keepends=True), fromfile=label_a, tofile=label_b)
+    return ''.join(diff)
 
 
 def sdk_snapshot_zip_file(snapshots_dir, sdk_name):
@@ -594,16 +600,11 @@ java_sdk_library_import {{
         with zipfile.ZipFile(sdk_zip_file, "r") as zipObj:
             extracted_current_api = zipObj.extract(
                 member=current_api, path=snapshots_dir)
-            # The diff tool has an exit code of 0, 1 or 2 depending on whether
-            # it find no differences, some differences or an error (like missing
-            # file). As 0 or 1 are both valid results this cannot use check=True
-            # so disable the pylint check.
-            # pylint: disable=subprocess-run-check
-            diff = subprocess.run([
-                "diff", "-u0", latest_api, extracted_current_api, "--label",
-                latest_api, "--label", extracted_current_api
-            ],
-                                  capture_output=True).stdout.decode("utf-8")
+            with open(latest_api) as f:
+                a = f.read()
+            with open(extracted_current_api) as f:
+                b = f.read()
+            diff = unified_diff(a, b, latest_api, extracted_current_api)
             file_object.write(diff)
 
     def create_snapshot_gantry_metadata_and_api_diff(self, sdk, target_dict,
