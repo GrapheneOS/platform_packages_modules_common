@@ -348,7 +348,7 @@ class TestProduceDist(unittest.TestCase):
             msg="Incorrect api-diff file name.")
         self.assertEqual(
             json_data["api_diff_file_size"],
-            267,
+            238,
             msg="Incorrect api-diff file size.")
         self.assertEqual(
             json_data["module_extension_version"],
@@ -787,6 +787,42 @@ class TestModuleProperties(unittest.TestCase):
                 self.assertTrue(module.is_bundled())
                 self.assertEqual(module.first_release, mm.LATEST)
 
+class TestGlobalFunctions(unittest.TestCase):
+    def test_unified_diff(self):
+        self.assertEqual(mm.unified_diff("foo", "foo", "left", "right"), "")
+        self.assertEqual(mm.unified_diff("""\
+0
+1
+2
+3
+4
+5
+6
+7
+8
+""", """\
+0
+1
+2
+3
+four
+5
+6
+7
+8
+""", "left", "right"), """\
+--- left
++++ right
+@@ -2,7 +2,7 @@
+ 1
+ 2
+ 3
+-4
++four
+ 5
+ 6
+ 7
+""")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
