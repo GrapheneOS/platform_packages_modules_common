@@ -344,6 +344,8 @@ def module_sdk_project_for_module(module, root_dir):
         return "prebuilts/module_sdk/Nfc"
     if module == "rkpd":
         return "prebuilts/module_sdk/RemoteKeyProvisioning"
+    if module == "telephony2":
+        return "prebuilts/module_sdk/Telephony"
     if module == "tethering":
         return "prebuilts/module_sdk/Connectivity"
 
@@ -1289,6 +1291,13 @@ MAINLINE_MODULES = [
         ]),
         last_optional_release=LATEST,
         module_proto_key="STATSD",
+    ),
+    MainlineModule(
+        apex="com.android.telephony2",
+        sdks=["telephony-module-sdk"],
+        first_release=Baklava,
+        last_optional_release=LATEST,
+        module_proto_key="",
     ),
     MainlineModule(
         apex="com.android.tethering",
