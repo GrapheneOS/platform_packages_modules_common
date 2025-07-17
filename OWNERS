@@ -15,6 +15,7 @@ psych@google.com
 robertogil@google.com
 rpl@google.com
 scianciulli@google.com
+include platform/frameworks/base:/SDK_OWNERS
 
 # Escalations
 jham@google.com
