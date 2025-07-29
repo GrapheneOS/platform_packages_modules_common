@@ -894,6 +894,12 @@ Baklava = BuildRelease(
     # prebuilts will be enabled using apex_contributions release build flags.
     preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
 )
+Baklava_1 = BuildRelease(
+    name="Baklava-1",
+    creator=create_sdk_snapshots_in_soong,
+    soong_env={},
+    preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
+)
 
 # Insert additional BuildRelease definitions for following releases here,
 # before LATEST.
