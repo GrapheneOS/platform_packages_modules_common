@@ -120,6 +120,9 @@ function init() {
   # This script cannot handle compressed apexes
   declare -grx OVERRIDE_PRODUCT_COMPRESSED_APEX=false
 
+  # TODO(b/380961055) parameterize this
+  declare -grx OVERRIDE_PRODUCT_DEFAULT_APEX_PAYLOAD_TYPE=ext4
+
   # UNBUNDLED_BUILD_SDKS_FROM_SOURCE defaults to false, which is necessary to
   # use prebuilt SDKs on thin branches that may not have the sources (e.g.
   # frameworks/base).
