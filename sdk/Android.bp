@@ -171,7 +171,11 @@ filegroup_defaults {
 // These apex_defaults serve as a common place to add properties which should
 // affect all mainline modules.
 
-APEX_LOWEST_MIN_SDK_VERSION = "30"
+APEX_LOWEST_MIN_SDK_VERSION = select(release_flag("RELEASE_DEPRECATE_MAINLINE_R_SUPPORT"), {
+    true: "31",
+    default: "30",
+})
+
 DCLA_MIN_SDK_VERSION = "31"
 
 apex_defaults {
@@ -218,7 +222,7 @@ library_linking_strategy_apex_defaults {
 apex_defaults {
     name: "r-launched-apex-module",
     defaults: ["any-launched-apex-modules"],
-    min_sdk_version: "30",
+    min_sdk_version: APEX_LOWEST_MIN_SDK_VERSION,
     defaults_visibility: ["//visibility:public"],
 }
 
