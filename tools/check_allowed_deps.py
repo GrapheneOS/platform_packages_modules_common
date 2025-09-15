@@ -13,7 +13,7 @@ sha = sys.argv[1]
 AllowedDepsTxt = "build/allowed_deps.txt"
 
 DisableAllowedDepsCheckKey = "No-Allowed-Deps-Check"
-ExpectedKeys = set(["Apex-Size-Increase", "Previous-Platform-Support", "Test-Info"])
+ExpectedKeys = set(["Apex-Size-Increase"])
 
 def is_aconfig_dep(dep: str):
   return bool(re.search(r"aconfig(d)?[-_]", dep))
